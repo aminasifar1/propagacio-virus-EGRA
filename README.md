@@ -1,2 +1,2 @@
 # Simulador de propagació d'un virus
-Repositori amb tot el material del projecte EGRA
+Es requereix construir un simulador de propagació d’un virus en un espai tancat determinat, en aquest cas, dins de l’Escola d’Enginyeria, en un dia lectiu habitual. La idea principal és visualitzar l’evolució dels infectats entre els estudiants i professorat, analitzar com el moviment de persones i la distància entre elles influeixen en el número d’afectats, i avaluar l’expansió del virus. Es definiran les aules i es modelarà comportament dels personatges en l’escena tenint en compte l’horari lectiu (hora de sortida, hora d’entrada, descansos,etc.). Finalment, s’extraurà tota la informació relacionada amb la malaltia propagada durant el temps definit. 
