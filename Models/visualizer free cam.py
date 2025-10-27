@@ -447,6 +447,78 @@ class Waypoint:
         self.position = position
         self.connections = connections if connections else []
 
+class WaypointVisualizer:
+    """Renderitza la xarxa de Waypoints com a línies."""
+    def __init__(self, ctx, camera):
+        self.ctx = ctx
+        self.camera = camera
+        self.shader = self.get_shader()
+        self.vbo = None
+        self.vao = None
+        self.vertex_count = 0
+
+    def get_shader(self):
+        """Shader simple per dibuixar línies d'un color pla."""
+        return self.ctx.program(
+            vertex_shader='''
+                #version 330
+                in vec3 in_position;
+                uniform mat4 m_proj;
+                uniform mat4 m_view;
+                uniform mat4 m_model;
+                void main() {
+                    gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
+                }
+            ''',
+            fragment_shader='''
+                #version 330
+                uniform vec3 grid_color;
+                out vec4 fragColor;
+                void main() {
+                    fragColor = vec4(grid_color, 1.0);
+                }
+            '''
+        )
+
+    def build_from_system(self, pathfinding_system):
+        """Construeix el VBO i VAO a partir del sistema de pathfinding."""
+        vertices = []
+        drawn_connections = set() # Per evitar dibuixar línies duplicades
+
+        for wp in pathfinding_system.waypoints:
+            for neighbor in wp.connections:
+                # Creem una ID única per a la connexió per evitar duplicats
+                # (ordre alfabètic basat en l'ID de memòria)
+                edge = tuple(sorted((id(wp), id(neighbor))))
+                
+                if edge not in drawn_connections:
+                    vertices.extend(wp.position)
+                    vertices.extend(neighbor.position)
+                    drawn_connections.add(edge)
+        
+        if not vertices:
+            return # No hi ha res a dibuixar
+            
+        self.vbo = self.ctx.buffer(np.array(vertices, dtype='f4'))
+        self.vao = self.ctx.vertex_array(self.shader, [(self.vbo, '3f', 'in_position')])
+        self.vertex_count = len(vertices) // 3 # Nombre total de vèrtexs individuals
+
+    def render(self):
+        """Dibuixa la graella."""
+        if not self.vao:
+            return # No s'ha construït res
+
+        m_model = glm.mat4(1.0) # Model identity
+        
+        # Actualitzem uniformes (important per la càmera lliure)
+        self.shader['m_proj'].write(self.camera.m_proj)
+        self.shader['m_view'].write(self.camera.m_view)
+        self.shader['m_model'].write(m_model)
+        self.shader['grid_color'].value = (0.0, 1.0, 0.0) # Color verd
+
+        self.ctx.line_width = 2.0 # Línies una mica més gruixudes
+        self.vao.render(mode=mgl.LINES)
+
 class PathfindingSystem:
     """Sistema simple de navegación con waypoints."""
     def __init__(self):
@@ -746,78 +818,84 @@ class Person:
             self.ring.render(light_pos)
 
 
-class WaypointVisualizer:
-    """Renderitza la xarxa de Waypoints com a línies."""
-    def __init__(self, ctx, camera):
-        self.ctx = ctx
-        self.camera = camera
-        self.shader = self.get_shader()
-        self.vbo = None
-        self.vao = None
-        self.vertex_count = 0
-
-    def get_shader(self):
-        """Shader simple per dibuixar línies d'un color pla."""
-        return self.ctx.program(
-            vertex_shader='''
-                #version 330
-                in vec3 in_position;
-                uniform mat4 m_proj;
-                uniform mat4 m_view;
-                uniform mat4 m_model;
-                void main() {
-                    gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
-                }
-            ''',
-            fragment_shader='''
-                #version 330
-                uniform vec3 grid_color;
-                out vec4 fragColor;
-                void main() {
-                    fragColor = vec4(grid_color, 1.0);
-                }
-            '''
-        )
-
-    def build_from_system(self, pathfinding_system):
-        """Construeix el VBO i VAO a partir del sistema de pathfinding."""
-        vertices = []
-        drawn_connections = set() # Per evitar dibuixar línies duplicades
-
-        for wp in pathfinding_system.waypoints:
-            for neighbor in wp.connections:
-                # Creem una ID única per a la connexió per evitar duplicats
-                # (ordre alfabètic basat en l'ID de memòria)
-                edge = tuple(sorted((id(wp), id(neighbor))))
-                
-                if edge not in drawn_connections:
-                    vertices.extend(wp.position)
-                    vertices.extend(neighbor.position)
-                    drawn_connections.add(edge)
+class InfectionBar:
+    """Barra de progreso para mostrar el porcentaje de infectados."""
+    def __init__(self, screen_width, screen_height):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
         
-        if not vertices:
-            return # No hi ha res a dibuixar
-            
-        self.vbo = self.ctx.buffer(np.array(vertices, dtype='f4'))
-        self.vao = self.ctx.vertex_array(self.shader, [(self.vbo, '3f', 'in_position')])
-        self.vertex_count = len(vertices) // 3 # Nombre total de vèrtexs individuals
-
-    def render(self):
-        """Dibuixa la graella."""
-        if not self.vao:
-            return # No s'ha construït res
-
-        m_model = glm.mat4(1.0) # Model identity
+        # Dimensiones de la barra
+        self.bar_width = screen_width - 40  # Margen de 20px a cada lado
+        self.bar_height = 40
+        self.bar_x = 20
+        self.bar_y = screen_height - 60  # 60px desde abajo
         
-        # Actualitzem uniformes (important per la càmera lliure)
-        self.shader['m_proj'].write(self.camera.m_proj)
-        self.shader['m_view'].write(self.camera.m_view)
-        self.shader['m_model'].write(m_model)
-        self.shader['grid_color'].value = (0.0, 1.0, 0.0) # Color verd
-
-        self.ctx.line_width = 2.0 # Línies una mica més gruixudes
-        self.vao.render(mode=mgl.LINES)
-
+        # Colores
+        self.bg_color = (30, 30, 35, 200)  # Fondo semi-transparente
+        self.healthy_color = (100, 200, 100)  # Verde para sanos
+        self.infected_color = (220, 50, 50)  # Rojo para infectados
+        self.border_color = (200, 200, 200)  # Borde blanco
+        self.text_color = (255, 255, 255)  # Texto blanco
+        
+        # Font para el texto
+        pg.font.init()
+        self.font = pg.font.Font(None, 28)
+        self.small_font = pg.font.Font(None, 22)
+    
+    def render(self, screen, num_infected, total_people):
+        """Renderiza la barra de infección."""
+        if total_people == 0:
+            return
+        
+        # Calcular porcentajes
+        infected_ratio = num_infected / total_people
+        healthy_ratio = 1.0 - infected_ratio
+        
+        # Crear superficie con transparencia para el fondo
+        bg_surface = pg.Surface((self.bar_width + 10, self.bar_height + 40), pg.SRCALPHA)
+        bg_surface.fill(self.bg_color)
+        screen.blit(bg_surface, (self.bar_x - 5, self.bar_y - 5))
+        
+        # Dibujar borde de la barra
+        pg.draw.rect(screen, self.border_color, 
+                    (self.bar_x, self.bar_y, self.bar_width, self.bar_height), 2)
+        
+        # Dibujar parte de sanos (verde)
+        healthy_width = int(self.bar_width * healthy_ratio)
+        if healthy_width > 0:
+            pg.draw.rect(screen, self.healthy_color,
+                        (self.bar_x, self.bar_y, healthy_width, self.bar_height))
+        
+        # Dibujar parte de infectados (rojo)
+        infected_width = int(self.bar_width * infected_ratio)
+        if infected_width > 0:
+            pg.draw.rect(screen, self.infected_color,
+                        (self.bar_x + healthy_width, self.bar_y, infected_width, self.bar_height))
+        
+        # Texto: Porcentajes
+        infected_pct = infected_ratio * 100
+        healthy_pct = healthy_ratio * 100
+        
+        # Texto principal en el centro
+        main_text = f"Infectados: {infected_pct:.1f}% ({num_infected}/{total_people})"
+        text_surface = self.font.render(main_text, True, self.text_color)
+        text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.bar_y + self.bar_height // 2))
+        
+        # Sombra para el texto (mejor legibilidad)
+        shadow_surface = self.font.render(main_text, True, (0, 0, 0))
+        shadow_rect = shadow_surface.get_rect(center=(text_rect.centerx + 2, text_rect.centery + 2))
+        screen.blit(shadow_surface, shadow_rect)
+        screen.blit(text_surface, text_rect)
+        
+        # Etiquetas a los lados
+        healthy_label = self.small_font.render(f"Sanos: {healthy_pct:.1f}%", True, self.healthy_color)
+        infected_label = self.small_font.render(f"Infectados: {infected_pct:.1f}%", True, self.infected_color)
+        
+        # Posicionar etiquetas
+        screen.blit(healthy_label, (self.bar_x, self.bar_y + self.bar_height + 5))
+        infected_label_rect = infected_label.get_rect()
+        infected_label_rect.topright = (self.bar_x + self.bar_width, self.bar_y + self.bar_height + 5)
+        screen.blit(infected_label, infected_label_rect)
 
 class ViewerApp:
     def __init__(self, obj_path, win_size=(1536, 864)):
@@ -826,46 +904,48 @@ class ViewerApp:
         self.WIN_SIZE = win_size
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.set_mode(self.WIN_SIZE, pg.OPENGL | pg.DOUBLEBUF)
+        # IMPORTANTE: Cambiamos aquí para tener acceso a pygame surface
+        self.screen = pg.display.set_mode(self.WIN_SIZE, pg.OPENGL | pg.DOUBLEBUF)
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.DEPTH_TEST)
-        self.ctx.front_face = 'ccw'  # Counter-clockwise para consistencia
+        self.ctx.front_face = 'ccw'
         self.aspect_ratio = win_size[0] / win_size[1]
         self.camera = Camera(self)
-        # Sistema de partículas para efectos puff
         self.puff_system = PuffSystem(self.ctx, self.camera)
         
+        # Barra de infección
+        self.infection_bar = InfectionBar(win_size[0], win_size[1])
+        
+        # Para renderizar la UI de pygame sobre OpenGL
+        self.ui_surface = pg.Surface(self.WIN_SIZE, pg.SRCALPHA)
+        
+        # ...existing code...
         self.clock = pg.time.Clock()
         self.last_time = time.time()
         self.frame_count = 0
         self.fps = 0
-        self.delta_time = 0.016 # Temps inicial per evitar pics
+        self.delta_time = 0.016
 
-        self.tick_duration = 0.2  # Segons per tick (p.ex., 0.5 = 2 ticks per segon)
+        self.tick_duration = 0.2
         self.tick_timer = 0.0
-        self.infection_probability = 1 # probabilitat d'infecció per tick
+        self.infection_probability = 1
 
         self.object = Object3D(self.ctx, obj_path, self.camera)
-        self.object.app = self # Donem accés a 'app' a l'objecte pel delta_time
+        self.object.app = self
 
-        # Control de la visualització de la graella
         self.show_grid = False
 
-        # Obtenim el Bounding Box de l'escenari
         min_coords, max_coords = self.object.bounding_box
         print(f"Escenari carregat. Bounding Box:")
         print(f"  MIN: {min_coords}")
         print(f"  MAX: {max_coords}")
         
-        # Sistema de navegación con waypoints
         self.pathfinding = PathfindingSystem()
         self.setup_waypoints(self.object.bounding_box)
 
-        # Visualitzador de Waypoints
         self.waypoint_visualizer = WaypointVisualizer(self.ctx, self.camera)
         self.waypoint_visualizer.build_from_system(self.pathfinding)
         
-        # Crear personas que caminan
         self.people = []
         num_people = 50
         ground_y = min_coords.y + 0.1
@@ -878,12 +958,11 @@ class ViewerApp:
                     self.ctx, self.camera, 
                     "person_1.obj", 
                     self.pathfinding, 
-                    ground_y, # Passem el ground_y dinàmic
+                    ground_y,
                     is_infected=is_infected
                 )
                 self.people.append(person)
             
-            # ... (la resta de __init__ és igual)
             if self.people:
                 first_person = self.people[0]
                 self.person_vao_tri = self.ctx.vertex_array(
@@ -910,7 +989,7 @@ class ViewerApp:
         """Configura una red de waypoints AUTOMÀTICAMENT basada en el Bounding Box."""
         
         min_coords, max_coords = bounding_box
-        ground_y = min_coords.y # El terra
+        ground_y = min_coords.y + 0.2 # El terra
         
         wp_grid = {}
         spacing = 2.0 # Distància entre waypoints (pots ajustar-la)
@@ -975,13 +1054,85 @@ class ViewerApp:
             puff_position = person_to_infect.position + glm.vec3(0, 1.0, 0)
             self.puff_system.create_puff(puff_position, num_particles=12)
 
+    def render_ui_to_texture(self):
+        """Renderiza la UI de pygame en una textura de OpenGL."""
+        # Contar infectados
+        num_infected = sum(1 for person in self.people if person.ring)
+        total_people = len(self.people)
+        
+        # Limpiar superficie UI
+        self.ui_surface.fill((0, 0, 0, 0))
+        
+        # Dibujar barra de infección
+        self.infection_bar.render(self.ui_surface, num_infected, total_people)
+        
+        # Convertir superficie de pygame a textura OpenGL
+        texture_data = pg.image.tostring(self.ui_surface, 'RGBA', True)
+        
+        # Crear/actualizar textura
+        if not hasattr(self, 'ui_texture'):
+            self.ui_texture = self.ctx.texture(self.WIN_SIZE, 4, texture_data)
+            self.ui_texture.filter = (mgl.LINEAR, mgl.LINEAR)
+        else:
+            self.ui_texture.write(texture_data)
+        
+        # Crear quad para renderizar la textura
+        if not hasattr(self, 'ui_vao'):
+            vertices = np.array([
+                -1, -1, 0, 0,
+                 1, -1, 1, 0,
+                -1,  1, 0, 1,
+                 1,  1, 1, 1,
+            ], dtype='f4')
+            
+            self.ui_vbo = self.ctx.buffer(vertices)
+            
+            self.ui_shader = self.ctx.program(
+                vertex_shader='''
+                    #version 330
+                    in vec2 in_position;
+                    in vec2 in_texcoord;
+                    out vec2 v_texcoord;
+                    void main() {
+                        v_texcoord = in_texcoord;
+                        gl_Position = vec4(in_position, 0.0, 1.0);
+                    }
+                ''',
+                fragment_shader='''
+                    #version 330
+                    in vec2 v_texcoord;
+                    uniform sampler2D ui_texture;
+                    out vec4 fragColor;
+                    void main() {
+                        fragColor = texture(ui_texture, v_texcoord);
+                    }
+                '''
+            )
+            
+            self.ui_vao = self.ctx.vertex_array(
+                self.ui_shader,
+                [(self.ui_vbo, '2f 2f', 'in_position', 'in_texcoord')]
+            )
+        
+        # Renderizar UI
+        self.ctx.disable(mgl.DEPTH_TEST)
+        self.ctx.enable(mgl.BLEND)
+        self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
+        
+        self.ui_texture.use(0)
+        self.ui_shader['ui_texture'] = 0
+        self.ui_vao.render(mode=mgl.TRIANGLE_STRIP)
+        
+        self.ctx.disable(mgl.BLEND)
+        self.ctx.enable(mgl.DEPTH_TEST)
+
     def run(self):
         last_frame_time = time.time()
         
         while True:
             current_frame_time = time.time()
             self.delta_time = current_frame_time - last_frame_time
-            if self.delta_time == 0: # Evitar divisió per zero
+            if self.delta_time == 0:
                 self.delta_time = 1e-6 
             last_frame_time = current_frame_time
             
@@ -998,46 +1149,39 @@ class ViewerApp:
 
             # --- LÒGICA D'ACTUALITZACIÓ ---
             
-            # Mover cámara
             self.camera.move(self.delta_time)
             
-            # Actualizar personas (moviment)
             for person in self.people:
                 person.update(self.delta_time)
                 
-            # Actualizar sistema de partículas
             self.puff_system.update(self.delta_time)
 
-            # Acumulem el temps del frame al comptador de ticks
             self.tick_timer += self.delta_time
 
-            # Si ha passat prou temps per un tick, executem la comprovació
             if self.tick_timer >= self.tick_duration:
-                self.tick_timer -= self.tick_duration # Restem la duració per no perdre temps acumulat
+                self.tick_timer -= self.tick_duration
                 self.check_infections()
             
-            # Actualitzar matrius de càmera
             self.camera.update_matrices()
             
             # --- RENDERITZAT ---
             self.ctx.clear(0.07, 0.07, 0.09)
             
-            # Renderizar el objeto principal (escenari)
             self.object.render()
 
-            # Renderitzar la graella de waypoints si està activada
             if self.show_grid:
                 self.waypoint_visualizer.render()
             
-            # Renderizar personas
             if self.people and self.person_vao_tri:
-                light_pos = self.object.update_light_position() # Obtenim la posició de la llum
+                light_pos = self.object.update_light_position()
                 for person in self.people:
                     person.render(self.object.shader, self.person_vao_tri, 
                                 self.person_vao_line, light_pos)
                     
-            # Renderizar sistema de partículas (después de todo lo demás)
             self.puff_system.render()
+            
+            # Renderizar UI (barra de infección)
+            self.render_ui_to_texture()
 
             # --- Càlcul FPS ---
             self.frame_count += 1
@@ -1049,7 +1193,6 @@ class ViewerApp:
                 pg.display.set_caption(f"3D Viewer - FPS: {self.fps:.1f} - WASD moverte, TAB soltar ratón")
 
             pg.display.flip()
-            # self.clock.tick() # No fem servir tick() per tenir delta_time real
 
 if __name__ == "__main__":
     obj_path = "OBJ.obj" # El teu escenari
