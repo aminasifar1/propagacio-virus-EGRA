@@ -963,7 +963,7 @@ class ViewerApp:
                 is_infected = (i == 0) 
                 person = Person(
                     self.ctx, self.camera, 
-                    "person_1.obj", 
+                    "Models/person_1.obj", 
                     self.pathfinding, 
                     ground_y,
                     is_infected=is_infected
@@ -1202,7 +1202,7 @@ class ViewerApp:
             pg.display.flip()
 
 if __name__ == "__main__":
-    obj_path = "OBJ.obj" # El teu escenari
+    obj_path = "Models/OBJ.obj" # El teu escenari
     try:
         app = ViewerApp(obj_path)
         app.run()
