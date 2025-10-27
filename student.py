@@ -4,7 +4,7 @@ import glm
 import sys
 import numpy as np
 
-# ---------------------- CAMERA ----------------------
+# ---------------------- CÀMERA ----------------------
 class Camera:
     def __init__(self, app):
         self.app = app
@@ -21,172 +21,226 @@ class Camera:
         return glm.perspective(glm.radians(45), self.aspect_ratio, 0.1, 100)
 
 
-# ---------------------- STUDENT (ESFERA CON WIREFRAME) ----------------------
-class Student:
-    def __init__(self, app, radius=1.0, subdivisions=2):
+# ---------------------- PRIMITIVES ----------------------
+class Primitives:
+    def __init__(self, app):
         self.app = app
         self.ctx = app.ctx
-        self.radius = radius
-        self.subdivisions = subdivisions
         self.shader_program = self.get_shader_program()
-        self.shader_program_wire = self.get_shader_wire()
-        # generar geometría
-        self.vertices, self.faces = self.generate_faces()
+        self.vertex_data = self.get_vertex_data()
+        self.vbo = self.ctx.buffer(self.vertex_data)
         self.vao = self.get_vao()
-        self.vao_wire = self.get_wireframe_vao()
-        self.m_model = glm.mat4()
 
-    # ------------------ shaders ------------------
+    def get_vertex_data(self):
+        # 3 línies per eixos XYZ
+        vertices = [
+            0, 0, 0, 1, 0, 0,   # X
+            2, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 1, 0,   # Y
+            0, 2, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 1,   # Z
+            0, 0, 2, 0, 0, 1
+        ]
+        return np.array(vertices, dtype='f4')
+
     def get_shader_program(self):
         return self.ctx.program(
             vertex_shader='''
                 #version 330
                 layout(location=0) in vec3 in_position;
-                layout(location=1) in vec3 in_normal;
-                out vec3 v_normal;
+                layout(location=1) in vec3 in_color;
                 uniform mat4 m_proj;
                 uniform mat4 m_view;
                 uniform mat4 m_model;
+                out vec3 v_color;
                 void main() {
                     gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
-                    v_normal = mat3(transpose(inverse(m_model))) * in_normal;
+                    v_color = in_color;
                 }
             ''',
             fragment_shader='''
                 #version 330
-                in vec3 v_normal;
+                in vec3 v_color;
                 out vec4 fragColor;
                 void main() {
-                    vec3 light_dir = normalize(vec3(1.0,1.0,1.0));
-                    float diff = max(dot(normalize(v_normal), light_dir), 0.0);
-                    vec3 color = vec3(1.0,0.8,0.1)*diff + vec3(0.1);
-                    fragColor = vec4(color, 1.0);
+                    fragColor = vec4(v_color, 1.0);
                 }
             '''
         )
 
-    def get_shader_wire(self):
+    def get_vao(self):
+        return self.ctx.vertex_array(
+            self.shader_program,
+            [
+                (self.vbo, '3f 3f', 'in_position', 'in_color')
+            ]
+        )
+
+    def render(self):
+        self.shader_program['m_proj'].write(self.app.camera.m_proj)
+        self.shader_program['m_view'].write(self.app.camera.m_view)
+        self.shader_program['m_model'].write(glm.mat4())
+        self.vao.render(mgl.LINES)
+
+    def destroy(self):
+        self.vbo.release()
+        self.shader_program.release()
+        self.vao.release()
+
+
+# ---------------------- PÍLDORA ----------------------
+class Pildora:
+    def __init__(self, app, radius=0.5, length=1.0, sectors=64, stacks=32, capas=4):
+        self.app = app
+        self.ctx = app.ctx
+        self.radius = radius
+        self.length = length
+        self.sectors = sectors
+        self.stacks = stacks
+        self.capas = capas
+        self.shader_program = self.get_shader_program()
+
+        self.vertex_data, self.layer_ids = self.get_pill_vertices_with_layers()
+        self.vbo = self.ctx.buffer(self.vertex_data)
+        self.layer_vbo = self.ctx.buffer(self.layer_ids)
+        self.vao = self.get_vao()
+
+        self.m_model = glm.mat4()
+
+    def get_shader_program(self):
         return self.ctx.program(
             vertex_shader='''
                 #version 330
                 layout(location=0) in vec3 in_position;
+                layout(location=1) in float in_layer;
                 uniform mat4 m_proj;
                 uniform mat4 m_view;
                 uniform mat4 m_model;
-                void main(){
-                    gl_Position = m_proj*m_view*m_model*vec4(in_position,1.0);
+                out float v_layer;
+                void main() {
+                    gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
+                    v_layer = in_layer;
                 }
             ''',
             fragment_shader='''
                 #version 330
+                in float v_layer;
                 out vec4 fragColor;
-                void main(){ fragColor = vec4(0.2,0.8,1.0,1.0); }
+                uniform vec3 u_color;
+                vec3 layerColor(float layer) {
+                    if (layer < 1.0) return vec3(0.8, 0.3, 0.4);
+                    if (layer < 2.0) return vec3(0.3, 0.8, 0.6);
+                    if (layer < 3.0) return vec3(0.5, 0.4, 0.9);
+                    return vec3(0.9, 0.9, 0.2);
+                }
+                void main() {
+                    vec3 base = layerColor(v_layer);
+                    fragColor = vec4(base * u_color, 1.0);
+                }
             '''
         )
 
-    # ------------------ generador de octaedro y subdivisión ------------------
-    def generate_faces(self):
-        # Vértices iniciales de octaedro
-        v = [
-            np.array([1,0,0], dtype='f4'),
-            np.array([-1,0,0], dtype='f4'),
-            np.array([0,1,0], dtype='f4'),
-            np.array([0,-1,0], dtype='f4'),
-            np.array([0,0,1], dtype='f4'),
-            np.array([0,0,-1], dtype='f4')
-        ]
-        faces = [
-            (v[0],v[4],v[2]), (v[2],v[4],v[1]),
-            (v[1],v[4],v[3]), (v[3],v[4],v[0]),
-            (v[0],v[2],v[5]), (v[2],v[1],v[5]),
-            (v[1],v[3],v[5]), (v[3],v[0],v[5])
-        ]
-        # Subdivisión
-        for _ in range(self.subdivisions):
-            faces_sub = []
-            for tri in faces:
-                a,b,c = tri
-                ab = self.normalize((a+b)/2)
-                bc = self.normalize((b+c)/2)
-                ca = self.normalize((c+a)/2)
-                faces_sub.extend([
-                    (a, ab, ca),
-                    (ab, b, bc),
-                    (ca, bc, c),
-                    (ab, bc, ca)
-                ])
-            faces = faces_sub
-
+    def get_pill_vertices_with_layers(self):
         vertices = []
-        for tri in faces:
-            for vert in tri:
-                pos = vert*self.radius
-                norm = self.normalize(vert)
-                vertices.append((pos[0], pos[1], pos[2], norm[0], norm[1], norm[2]))
-        return np.array(vertices, dtype='f4'), faces
+        layer_ids = []
+        pi = np.pi
+        sector_step = 2 * pi / self.sectors
+        stack_step = pi / self.stacks
 
-    def normalize(self, v):
-        norm = np.linalg.norm(v)
-        if norm==0: return v
-        return v/norm
+        for i in range(self.stacks + 1):
+            theta = i * stack_step
+            sin_theta = np.sin(theta)
+            cos_theta = np.cos(theta)
 
-    # ------------------ VAO para esfera ------------------
+            for j in range(self.sectors + 1):
+                phi = j * sector_step
+                sin_phi = np.sin(phi)
+                cos_phi = np.cos(phi)
+
+                x = self.radius * sin_theta * cos_phi
+                y = self.radius * cos_theta
+                z = self.radius * sin_theta * sin_phi
+
+                if abs(y) < self.radius:
+                    y += np.sign(y) * self.length / 2.0
+                else:
+                    y += (self.length / 2.0) * np.sign(y)
+
+                vertices.append((x, y, z))
+                layer = (y / ((self.radius + self.length / 2) * 2)) * self.capas
+                layer_ids.append((layer,))
+
+        # triangles
+        indices = []
+        for i in range(self.stacks):
+            k1 = i * (self.sectors + 1)
+            k2 = k1 + self.sectors + 1
+            for j in range(self.sectors):
+                indices.append((k1 + j, k2 + j, k1 + j + 1))
+                indices.append((k1 + j + 1, k2 + j, k2 + j + 1))
+
+        vertex_array = np.array([vertices[idx] for tri in indices for idx in tri], dtype='f4')
+        layer_array = np.array([layer_ids[idx][0] for tri in indices for idx in tri], dtype='f4').reshape(-1, 1)
+        return vertex_array, layer_array
+
     def get_vao(self):
-        return self.ctx.vertex_array(self.shader_program, [(self.ctx.buffer(self.vertices), '3f 3f', 'in_position','in_normal')])
+        return self.ctx.vertex_array(
+            self.shader_program,
+            [
+                (self.vbo, '3f', 'in_position'),
+                (self.layer_vbo, '1f', 'in_layer'),
+            ],
+        )
 
-    # ------------------ VAO para wireframe ------------------
-    def get_wireframe_vao(self):
-        lines = []
-        for tri in self.faces:
-            a,b,c = tri
-            lines.extend([a,b,b,c,c,a])
-        line_data = np.array([v for vert in lines for v in vert], dtype='f4')
-        vbo_lines = self.ctx.buffer(line_data)
-        return self.ctx.vertex_array(self.shader_program_wire, [(vbo_lines,'3f','in_position')])
-
-    # ------------------ render ------------------
     def render(self):
         self.ctx.enable(mgl.DEPTH_TEST)
-        # Wireframe
-        self.shader_program_wire['m_proj'].write(self.app.camera.m_proj)
-        self.shader_program_wire['m_view'].write(self.app.camera.m_view)
-        self.shader_program_wire['m_model'].write(self.m_model)
-        self.vao_wire.render(mgl.LINES)
-        # Esfera
         self.shader_program['m_proj'].write(self.app.camera.m_proj)
         self.shader_program['m_view'].write(self.app.camera.m_view)
         self.shader_program['m_model'].write(self.m_model)
+
+        # superfície
+        self.shader_program['u_color'].value = (1.0, 1.0, 1.0)
         self.vao.render(mgl.TRIANGLES)
+        # wireframe
+        self.shader_program['u_color'].value = (0.1, 0.9, 1.0)
+        self.vao.render(mgl.LINES)
+        # punts
+        self.shader_program['u_color'].value = (1.0, 1.0, 0.0)
+        self.ctx.point_size = 5.0
+        self.vao.render(mgl.POINTS)
 
     def destroy(self):
-        self.vao.release()
-        self.vao_wire.release()
+        self.vbo.release()
+        self.layer_vbo.release()
         self.shader_program.release()
-        self.shader_program_wire.release()
+        self.vao.release()
 
 
-# ---------------------- ENGINE ----------------------
+# ---------------------- MOTOR ----------------------
 class GraphicsEngine:
-    def __init__(self, win_size=(800,800)):
+    def __init__(self, win_size=(900, 900)):
         pg.init()
         self.WIN_SIZE = win_size
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION,3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION,3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode(self.WIN_SIZE, flags=pg.OPENGL|pg.DOUBLEBUF)
+        pg.display.set_mode(self.WIN_SIZE, flags=pg.OPENGL | pg.DOUBLEBUF)
         self.ctx = mgl.create_context()
         self.camera = Camera(self)
-        self.scene = Student(self, radius=1.0, subdivisions=2)
+        self.primitives = Primitives(self)
+        self.scene = Pildora(self, radius=0.4, length=1.0, sectors=48, stacks=24, capas=4)
 
     def check_events(self):
         for event in pg.event.get():
-            if event.type == pg.QUIT or (event.type==pg.KEYDOWN and event.key==pg.K_ESCAPE):
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 self.scene.destroy()
+                self.primitives.destroy()
                 pg.quit()
                 sys.exit()
 
     def render(self):
-        self.ctx.clear(0.0,0.0,0.0)
+        self.ctx.clear(0.05, 0.05, 0.08)
+        self.primitives.render()
         self.scene.render()
         pg.display.flip()
 
@@ -196,6 +250,6 @@ class GraphicsEngine:
             self.render()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     app = GraphicsEngine()
     app.run()
