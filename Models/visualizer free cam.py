@@ -316,6 +316,7 @@ class Ring:
         self.color = color
         self.position = position
         self.m_model = glm.translate(glm.mat4(), self.position)
+        self.contagion_radius = radius + thickness
 
         # --- Generació de la geometria 3D i normals ---
         vertices = []
@@ -1034,16 +1035,21 @@ class ViewerApp:
         if not self.people:
             return
 
-        infected_people = [p for p in self.people if p.ring]
-        uninfected_people = [p for p in self.people if not p.ring]
+        infected_people = []
+        uninfected_people = []
+        for p in self.people:
+            if p.ring:
+                infected_people.append(p)
+            else:
+                uninfected_people.append(p)
         
         if not uninfected_people:
             return
 
         newly_infected = []
-        infection_radius = 1.0
 
         for infected in infected_people:
+            infection_radius = infected.ring.contagion_radius
             for uninfected in uninfected_people:
                 if uninfected in newly_infected:
                     continue
