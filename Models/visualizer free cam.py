@@ -529,20 +529,20 @@ class PathfindingSystem:
     """Sistema simple de navegación con waypoints."""
     def __init__(self):
         self.waypoints = []
-    
+
     def add_waypoint(self, position):
         """Añade un waypoint."""
         wp = Waypoint(glm.vec3(position))
         self.waypoints.append(wp)
         return wp
-    
+
     def connect(self, wp1, wp2):
         """Conecta dos waypoints bidireccionalemente."""
         if wp2 not in wp1.connections:
             wp1.connections.append(wp2)
         if wp1 not in wp2.connections:
             wp2.connections.append(wp1)
-    
+
     def get_nearest_waypoint(self, position):
         """Encuentra el waypoint más cercano a una posición."""
         if not self.waypoints:
@@ -574,36 +574,36 @@ class PuffParticle:
             random.uniform(-0.5, 0.5)
         )
         self.is_dead = False
-        
+
         # Crear geometría de esfera simple para la partícula
         self.create_sphere()
-        
+
     def create_sphere(self):
         """Crea una esfera simple para representar la partícula."""
         vertices = []
         segments = 8
-        
+
         for i in range(segments):
             theta1 = (i / segments) * math.pi
             theta2 = ((i + 1) / segments) * math.pi
-            
+
             for j in range(segments * 2):
                 phi1 = (j / (segments * 2)) * 2 * math.pi
                 phi2 = ((j + 1) / (segments * 2)) * 2 * math.pi
-                
+
                 # Vértices de un quad en la esfera
                 v1 = (math.sin(theta1) * math.cos(phi1), math.cos(theta1), math.sin(theta1) * math.sin(phi1))
                 v2 = (math.sin(theta1) * math.cos(phi2), math.cos(theta1), math.sin(theta1) * math.sin(phi2))
                 v3 = (math.sin(theta2) * math.cos(phi2), math.cos(theta2), math.sin(theta2) * math.sin(phi2))
                 v4 = (math.sin(theta2) * math.cos(phi1), math.cos(theta2), math.sin(theta2) * math.sin(phi1))
-                
+
                 # Dos triángulos
                 vertices.extend([v1, v2, v3, v1, v3, v4])
-        
+
         self.vbo = self.ctx.buffer(np.array(vertices, dtype='f4').flatten())
         self.shader = self.get_shader()
         self.vao = self.ctx.vertex_array(self.shader, [(self.vbo, '3f', 'in_position')])
-    
+
     def get_shader(self):
         """Shader con transparencia para la partícula."""
         return self.ctx.program(
@@ -627,49 +627,49 @@ class PuffParticle:
                 }
             '''
         )
-    
+
     def update(self, delta_time):
         """Actualiza la partícula."""
         self.age += delta_time
-        
+
         if self.age >= self.lifetime:
             self.is_dead = True
             return
-        
+
         # Movimiento
         self.position += self.velocity * delta_time
-        
+
         # Desaceleración vertical (gravedad suave)
         self.velocity.y -= 2.0 * delta_time
-        
+
         # Expansión rápida al inicio, luego se mantiene
         progress = self.age / self.lifetime
         if progress < 0.3:
             self.scale = self.max_scale * (progress / 0.3)
         else:
             self.scale = self.max_scale
-    
+
     def render(self):
         """Renderiza la partícula."""
         if self.is_dead:
             return
-        
+
         # Calcular alpha (transparencia) - se desvanece al final
         progress = self.age / self.lifetime
         alpha = 1.0 - progress  # De 1 a 0
-        
+
         # Matriz de modelo
         m_model = glm.mat4(1.0)
         m_model = glm.translate(m_model, self.position)
         m_model = glm.scale(m_model, glm.vec3(self.scale))
-        
+
         # Actualizar uniforms
         self.shader['m_proj'].write(self.camera.m_proj)
         self.shader['m_view'].write(self.camera.m_view)
         self.shader['m_model'].write(m_model)
         self.shader['particle_color'].value = self.color
         self.shader['alpha'].value = alpha
-        
+
         self.vao.render(mode=mgl.TRIANGLES)
 
 class PuffSystem:
@@ -678,7 +678,7 @@ class PuffSystem:
         self.ctx = ctx
         self.camera = camera
         self.particles = []
-    
+
     def create_puff(self, position, num_particles=8):
         """Crea un efecto puff en una posición."""
         colors = [
@@ -686,28 +686,28 @@ class PuffSystem:
             (1.0, 0.5, 0.0),  # Naranja
             (1.0, 0.7, 0.2),  # Amarillo anaranjado
         ]
-        
+
         for _ in range(num_particles):
             color = random.choice(colors)
             particle = PuffParticle(self.ctx, self.camera, position, color)
             self.particles.append(particle)
-    
+
     def update(self, delta_time):
         """Actualiza todas las partículas."""
         for particle in self.particles[:]:
             particle.update(delta_time)
             if particle.is_dead:
                 self.particles.remove(particle)
-    
+
     def render(self):
         """Renderiza todas las partículas."""
         # Habilitar blending para transparencia
         self.ctx.enable(mgl.BLEND)
         self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
-        
+
         for particle in self.particles:
             particle.render()
-        
+
         self.ctx.disable(mgl.BLEND)
 
 
@@ -963,13 +963,13 @@ class ViewerApp:
                 is_infected = (i == 0) 
                 person = Person(
                     self.ctx, self.camera, 
-                    "Models/person_1.obj", 
-                    self.pathfinding, 
+                    "person_1.obj",
+                    self.pathfinding,
                     ground_y,
                     is_infected=is_infected
                 )
                 self.people.append(person)
-            
+
             if self.people:
                 first_person = self.people[0]
                 self.person_vao_tri = self.ctx.vertex_array(
@@ -994,18 +994,18 @@ class ViewerApp:
 
     def setup_waypoints(self, bounding_box):
         """Configura una red de waypoints AUTOMÀTICAMENT basada en el Bounding Box."""
-        
+
         min_coords, max_coords = bounding_box
         ground_y = min_coords.y + 0.2 # El terra
-        
+
         wp_grid = {}
         spacing = 2.0 # Distància entre waypoints (pots ajustar-la)
-        
+
         # Calculem el rang del grid basat en el BBox
         # Afegim +1 als 'end' per assegurar que cobrim la cantonada
         x_start = int(min_coords.x / spacing)
         x_end = int(max_coords.x / spacing) + 1
-        
+
         z_start = int(min_coords.z / spacing)
         z_end = int(max_coords.z / spacing) + 1
 
@@ -1017,7 +1017,7 @@ class ViewerApp:
                 pos = (x * spacing, ground_y, z * spacing)
                 wp = self.pathfinding.add_waypoint(pos)
                 wp_grid[(x, z)] = wp
-        
+
         # Conectar waypoints adyacentes (grid)
         for x in range(x_start, x_end):
             for z in range(z_start, z_end):
@@ -1036,7 +1036,7 @@ class ViewerApp:
 
         infected_people = [p for p in self.people if p.ring]
         uninfected_people = [p for p in self.people if not p.ring]
-        
+
         if not uninfected_people:
             return
 
@@ -1047,13 +1047,13 @@ class ViewerApp:
             for uninfected in uninfected_people:
                 if uninfected in newly_infected:
                     continue
-                
+
                 dist = glm.length(infected.position - uninfected.position)
-                
+
                 if dist < infection_radius:
                     if random.random() < self.infection_probability:
                         newly_infected.append(uninfected)
-        
+
         # Infectar als nous i crear efecte puff
         for person_to_infect in newly_infected:
             person_to_infect.infect()
@@ -1066,23 +1066,23 @@ class ViewerApp:
         # Contar infectados
         num_infected = sum(1 for person in self.people if person.ring)
         total_people = len(self.people)
-        
+
         # Limpiar superficie UI
         self.ui_surface.fill((0, 0, 0, 0))
-        
+
         # Dibujar barra de infección
         self.infection_bar.render(self.ui_surface, num_infected, total_people)
-        
+
         # Convertir superficie de pygame a textura OpenGL
         texture_data = pg.image.tostring(self.ui_surface, 'RGBA', True)
-        
+
         # Crear/actualizar textura
         if not hasattr(self, 'ui_texture'):
             self.ui_texture = self.ctx.texture(self.WIN_SIZE, 4, texture_data)
             self.ui_texture.filter = (mgl.LINEAR, mgl.LINEAR)
         else:
             self.ui_texture.write(texture_data)
-        
+
         # Crear quad para renderizar la textura
         if not hasattr(self, 'ui_vao'):
             vertices = np.array([
@@ -1091,9 +1091,9 @@ class ViewerApp:
                 -1,  1, 0, 1,
                  1,  1, 1, 1,
             ], dtype='f4')
-            
+
             self.ui_vbo = self.ctx.buffer(vertices)
-            
+
             self.ui_shader = self.ctx.program(
                 vertex_shader='''
                     #version 330
@@ -1115,34 +1115,34 @@ class ViewerApp:
                     }
                 '''
             )
-            
+
             self.ui_vao = self.ctx.vertex_array(
                 self.ui_shader,
                 [(self.ui_vbo, '2f 2f', 'in_position', 'in_texcoord')]
             )
-        
+
         # Renderizar UI
         self.ctx.disable(mgl.DEPTH_TEST)
         self.ctx.enable(mgl.BLEND)
         self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
-        
+
         self.ui_texture.use(0)
         self.ui_shader['ui_texture'] = 0
         self.ui_vao.render(mode=mgl.TRIANGLE_STRIP)
-        
+
         self.ctx.disable(mgl.BLEND)
         self.ctx.enable(mgl.DEPTH_TEST)
 
     def run(self):
         last_frame_time = time.time()
-        
+
         while True:
             current_frame_time = time.time()
             self.delta_time = current_frame_time - last_frame_time
             if self.delta_time == 0:
-                self.delta_time = 1e-6 
+                self.delta_time = 1e-6
             last_frame_time = current_frame_time
-            
+
             for e in pg.event.get():
                 self.camera.handle_mouse(e)
                 if e.type == pg.QUIT or (e.type == pg.KEYDOWN and e.key == pg.K_ESCAPE):
@@ -1155,12 +1155,12 @@ class ViewerApp:
                         print(f"Graella de waypoints: {'Visible' if self.show_grid else 'Oculta'}")
 
             # --- LÒGICA D'ACTUALITZACIÓ ---
-            
+
             self.camera.move(self.delta_time)
-            
+
             for person in self.people:
                 person.update(self.delta_time)
-                
+
             self.puff_system.update(self.delta_time)
 
             self.tick_timer += self.delta_time
@@ -1168,25 +1168,25 @@ class ViewerApp:
             if self.tick_timer >= self.tick_duration:
                 self.tick_timer -= self.tick_duration
                 self.check_infections()
-            
+
             self.camera.update_matrices()
-            
+
             # --- RENDERITZAT ---
             self.ctx.clear(0.07, 0.07, 0.09)
-            
+
             self.object.render()
 
             if self.show_grid:
                 self.waypoint_visualizer.render()
-            
+
             if self.people and self.person_vao_tri:
                 light_pos = self.object.update_light_position()
                 for person in self.people:
-                    person.render(self.object.shader, self.person_vao_tri, 
+                    person.render(self.object.shader, self.person_vao_tri,
                                 self.person_vao_line, light_pos)
-                    
+
             self.puff_system.render()
-            
+
             # Renderizar UI (barra de infección)
             self.render_ui_to_texture()
 
@@ -1202,7 +1202,7 @@ class ViewerApp:
             pg.display.flip()
 
 if __name__ == "__main__":
-    obj_path = "Models/OBJ.obj" # El teu escenari
+    obj_path = "OBJ.obj" # El teu escenari
     try:
         app = ViewerApp(obj_path)
         app.run()
