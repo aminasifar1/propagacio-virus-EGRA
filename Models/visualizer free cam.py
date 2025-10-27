@@ -200,6 +200,9 @@ class Camera:
         self.m_view = self.get_view_matrix()
         self.m_proj = self.get_projection_matrix()
 
+
+
+
 class Object3D:
     def __init__(self, ctx, obj_path, camera):
         self.ctx = ctx
@@ -300,6 +303,9 @@ class Object3D:
         self.vao_tri.render(mode=mgl.TRIANGLES)
         self.ctx.line_width = 1.0
         self.vao_line.render(mode=mgl.LINES)
+
+
+
 
 # --- INICI CLASSE RING (DE INFECTION_BLENDER.PY) ---
 class Ring:
@@ -947,6 +953,7 @@ class ViewerApp:
         self.waypoint_visualizer.build_from_system(self.pathfinding)
         
         self.people = []
+        # número de persones
         num_people = 50
         ground_y = min_coords.y + 0.1
         print(f"Terra (ground_y) establert a: {ground_y}")
