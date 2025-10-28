@@ -7,6 +7,99 @@ import time
 import math
 import random
 
+
+def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3]]:
+    """
+    Carrega vèrtexs, cares (triangles) i arestes d'un fitxer OBJ, calculant normals per vèrtex
+    per a un ombrejat suau (Phong).
+
+    Args:
+        path (str): La ruta al fitxer .obj.
+
+    Returns:
+        tuple: Una tupla contenint:
+            - np.ndarray: Vèrtexs dels triangles per al renderitzat.
+            - np.ndarray: Normals per vèrtex per a la il·luminació.
+            - np.ndarray: Vèrtexs de les arestes per al renderitzat de línies.
+            - tuple: El bounding box (min_coords, max_coords) de l'objecte.
+    """
+    vertices = []
+    faces = []
+    edges = set()
+
+    try:
+        with open(path, 'r') as f:
+            for line in f:
+                if line.startswith('v '):
+                    _, x, y, z = line.strip().split()
+                    vertices.append((float(x), float(y), float(z)))
+                elif line.startswith('f '):
+                    # Gestiona cares amb 3 o més vèrtexs (triangulació simple)
+                    parts = line.strip().split()[1:]
+                    face_indices = [int(p.split('/')[0]) - 1 for p in parts]
+
+                    # Triangula la cara si té més de 3 vèrtexs
+                    for i in range(1, len(face_indices) - 1):
+                        faces.append((face_indices[0], face_indices[i], face_indices[i + 1]))
+
+                    # Afegeix les arestes de la cara
+                    for i in range(len(face_indices)):
+                        p1 = face_indices[i]
+                        p2 = face_indices[(i + 1) % len(face_indices)]
+                        edge = tuple(sorted((p1, p2)))
+                        edges.add(edge)
+    except FileNotFoundError:
+        print(f"Error: El fitxer '{path}' no s'ha trobat.")
+        raise
+    except Exception as e:
+        print(f"Error en processar el fitxer OBJ '{path}': {e}")
+        raise
+
+    if not vertices:
+        return np.array([]), np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0))
+
+    # --- Càlcul del Bounding Box ---
+    np_vertices = np.array(vertices, dtype='f4')
+    min_coords = np.min(np_vertices, axis=0)
+    max_coords = np.max(np_vertices, axis=0)
+    bounding_box = (glm.vec3(min_coords), glm.vec3(max_coords))
+
+    # --- Càlcul de Normals per Vèrtex (Phong Shading) ---
+    vertex_normals = [np.zeros(3) for _ in range(len(vertices))]
+    for face in faces:
+        v0, v1, v2 = (np.array(vertices[i]) for i in face)
+        face_normal = np.cross(v1 - v0, v2 - v0)
+
+        # Acumula la normal de la cara a cada vèrtex que la compon
+        for vertex_index in face:
+            vertex_normals[vertex_index] += face_normal
+
+    # Normalitza totes les normals acumulades
+    vertex_normals = [
+        v / np.linalg.norm(v) if np.linalg.norm(v) > 0 else np.array([0, 1, 0])
+        for v in vertex_normals
+    ]
+
+    # --- Preparació de Dades per a OpenGL ---
+    tri_vertices_data = []
+    normals_data = []
+    for face in faces:
+        for vertex_index in face:
+            tri_vertices_data.extend(vertices[vertex_index])
+            normals_data.extend(vertex_normals[vertex_index])
+
+    line_vertices_data = []
+    for edge in edges:
+        line_vertices_data.extend(vertices[edge[0]])
+        line_vertices_data.extend(vertices[edge[1]])
+
+    return (
+        np.array(tri_vertices_data, dtype='f4'),
+        np.array(normals_data, dtype='f4'),
+        np.array(line_vertices_data, dtype='f4'),
+        bounding_box
+    )
+
 class Object3D:
     def __init__(self, ctx, obj_path, camera):
         self.ctx = ctx
