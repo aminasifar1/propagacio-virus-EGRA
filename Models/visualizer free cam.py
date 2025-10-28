@@ -316,6 +316,7 @@ class Ring:
         self.color = color
         self.position = position
         self.m_model = glm.translate(glm.mat4(), self.position)
+        self.contagion_radius = radius + thickness
 
         # --- Generació de la geometria 3D i normals ---
         vertices = []
@@ -903,6 +904,58 @@ class InfectionBar:
         infected_label_rect.topright = (self.bar_x + self.bar_width, self.bar_y + self.bar_height + 5)
         screen.blit(infected_label, infected_label_rect)
 
+class Virus:
+    def __init__(self,app,td,tt,ip,r):
+        self.puff_system = app.puff_system
+        self.tick_duration = td
+        self.tick_timer = tt 
+        self.infection_probability = ip
+        self.radio = r
+    
+    def update(self,td,tt,ip,r):
+        self.tick_duration = td
+        self.tick_timer = tt 
+        self.infection_probability = ip
+        self.radio = r
+    
+    def check_infections(self,people):
+        """Comprova col·lisions per transferir infecció."""
+        if not people:
+            return
+
+        infected_people = []
+        uninfected_people = []
+        for p in people:
+            if p.ring:
+                infected_people.append(p)
+            else:
+                uninfected_people.append(p)
+        
+        if not uninfected_people:
+            return
+
+        newly_infected = []
+
+        for infected in infected_people:
+            infection_radius = infected.ring.contagion_radius
+            for uninfected in uninfected_people:
+                if uninfected in newly_infected:
+                    continue
+                
+                dist = glm.length(infected.position - uninfected.position)
+                
+                if dist < infection_radius:
+                    if random.random() < self.infection_probability:
+                        newly_infected.append(uninfected)
+        
+        # Infectar als nous i crear efecte puff
+        for person_to_infect in newly_infected:
+            person_to_infect.infect()
+            # CREAR EFECTO PUFF EN LA POSICIÓN DE LA PERSONA
+            puff_position = person_to_infect.position + glm.vec3(0, 1.0, 0)
+            self.puff_system.create_puff(puff_position, num_particles=12)
+
+
 class ViewerApp:
     def __init__(self, obj_path, win_size=(1536, 864)):
         pg.init()
@@ -935,6 +988,8 @@ class ViewerApp:
         self.tick_duration = 0.2
         self.tick_timer = 0.0
         self.infection_probability = 1
+
+        self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1)
 
         self.object = Object3D(self.ctx, obj_path, self.camera)
         self.object.app = self
@@ -1028,38 +1083,7 @@ class ViewerApp:
                         neighbor = wp_grid.get((x+dx, z+dz))
                         if neighbor:
                             self.pathfinding.connect(current, neighbor)
-
-    def check_infections(self):
-        """Comprova col·lisions per transferir infecció."""
-        if not self.people:
-            return
-
-        infected_people = [p for p in self.people if p.ring]
-        uninfected_people = [p for p in self.people if not p.ring]
-        
-        if not uninfected_people:
-            return
-
-        newly_infected = []
-        infection_radius = 1.0
-
-        for infected in infected_people:
-            for uninfected in uninfected_people:
-                if uninfected in newly_infected:
-                    continue
-                
-                dist = glm.length(infected.position - uninfected.position)
-                
-                if dist < infection_radius:
-                    if random.random() < self.infection_probability:
-                        newly_infected.append(uninfected)
-        
-        # Infectar als nous i crear efecte puff
-        for person_to_infect in newly_infected:
-            person_to_infect.infect()
-            # CREAR EFECTO PUFF EN LA POSICIÓN DE LA PERSONA
-            puff_position = person_to_infect.position + glm.vec3(0, 1.0, 0)
-            self.puff_system.create_puff(puff_position, num_particles=12)
+                        
 
     def render_ui_to_texture(self):
         """Renderiza la UI de pygame en una textura de OpenGL."""
@@ -1167,7 +1191,7 @@ class ViewerApp:
 
             if self.tick_timer >= self.tick_duration:
                 self.tick_timer -= self.tick_duration
-                self.check_infections()
+                self.virus.check_infections(self.people)
             
             self.camera.update_matrices()
             
