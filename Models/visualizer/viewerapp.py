@@ -14,12 +14,12 @@ from pathfinding import PathfindingSystem
 from person import Person
 from puff import PuffSystem
 from waypoint import WaypointVisualizer
+from marker import Marker
 
 
 class ViewerApp:
     def __init__(self, obj_path, win_size=(1536, 864)):
         pg.init()
-        pg.display.set_caption("3D Viewer - WASD para moverte, TAB para soltar ratón")
         self.WIN_SIZE = win_size
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
@@ -52,6 +52,8 @@ class ViewerApp:
 
         # --- PATHFINDING NOMÉS DINS DE LES AULES ---
         self.pathfinding = PathfindingSystem()
+
+        self.marker = Marker(self.ctx, self.camera)
 
         # ---- AULES EXACTES AMB SUBCUADRADOS DE 1.6 ----
         self.class_grids = []
@@ -96,7 +98,7 @@ class ViewerApp:
                 is_infected = (i == 0)
                 person = Person(
                     self.ctx, self.camera,
-                    "person_1.obj",
+                    "Models/visualizer/person_1.obj",
                     self.pathfinding,
                     ground_y,
                     is_infected
@@ -188,6 +190,49 @@ class ViewerApp:
         else:
             self.ui_texture.write(texture_data)
 
+        # Crear quad para renderizar la textura
+        if not hasattr(self, 'ui_vao'):
+            vertices = np.array([
+                -1, -1, 0, 0,
+                 1, -1, 1, 0,
+                -1,  1, 0, 1,
+                 1,  1, 1, 1,], dtype='f4') 
+            self.ui_vbo = self.ctx.buffer(vertices)
+            self.ui_shader = self.ctx.program(
+                vertex_shader='''
+                    #version 330
+                    in vec2 in_position;
+                    in vec2 in_texcoord;
+                    out vec2 v_texcoord;
+                    void main() {
+                        v_texcoord = in_texcoord;
+                        gl_Position = vec4(in_position, 0.0, 1.0);
+                    }
+                ''',
+                fragment_shader='''
+                    #version 330
+                    in vec2 v_texcoord;
+                    uniform sampler2D ui_texture;
+                    out vec4 fragColor;
+                    void main() {
+                        fragColor = texture(ui_texture, v_texcoord);
+                    }
+                ''')
+            self.ui_vao = self.ctx.vertex_array(
+                self.ui_shader,
+                [(self.ui_vbo, '2f 2f', 'in_position', 'in_texcoord')])
+
+        # Renderizar UI
+        self.ctx.disable(mgl.DEPTH_TEST)
+        self.ctx.enable(mgl.BLEND)
+        self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
+        
+        self.ui_texture.use(0)
+        self.ui_shader['ui_texture'] = 0
+        self.ui_vao.render(mode=mgl.TRIANGLE_STRIP)
+        
+        self.ctx.disable(mgl.BLEND)
+        self.ctx.enable(mgl.DEPTH_TEST)
 
     # --- run ---
     def run(self):
@@ -238,13 +283,26 @@ class ViewerApp:
                 for p in self.people:
                     p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
 
+            # --- Càlcul FPS ---
+            self.frame_count += 1
+            current_time = time.time()
+            if current_time - self.last_time >= 1.0:
+                self.fps = self.frame_count / (current_time - self.last_time)
+                self.frame_count = 0
+                self.last_time = current_time
+                pg.display.set_caption(f"3D Viewer - FPS: {self.fps:.1f} - WASD moverte, TAB soltar ratón")
+
+            self.marker.handle_input(pg.key.get_pressed())
+            self.marker.print_position()
+            self.marker.render()
+
             self.puff_system.render()
             self.render_ui_to_texture()
             pg.display.flip()
 
 
 if __name__ == "__main__":
-    obj_path = "OBJ.obj"
+    obj_path = "Models/visualizer/OBJ.obj"
     try:
         app = ViewerApp(obj_path)
         app.run()
