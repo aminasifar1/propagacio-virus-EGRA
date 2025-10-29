@@ -132,6 +132,9 @@ class MotorGrafico:
         self.aspect_ratio = win_size[0] / win_size[1]
         self.camera = Camera(self)
 
+        # Mundo
+        self.mundo = facultad
+
         # Camera
         self.camera = Camera(self)
 
@@ -161,7 +164,7 @@ class MotorGrafico:
         tri_data, normals, line_data, bounding_box = load_obj(person_path)
         self.people = []
         for i in range(10):
-            self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula3'], 'aula3'))
+            self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula2'], 'pasillo'))
 
         first_person = self.people[0]
         self.person_vao_tri = self.ctx.vertex_array(

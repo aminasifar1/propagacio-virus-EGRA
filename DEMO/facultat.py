@@ -41,6 +41,7 @@ class Sala:
         self.id_sala = id_sala
         self.tipo = tipo
         self.waypoints: Dict[int, Waypoint] = {}
+        self.personas = []
 
         # Si la sala tiene “puerta” (dos nodos especiales):
         # entrada = nodo fuera (en pasillo); salida = nodo dentro (en la sala)
@@ -62,6 +63,16 @@ class Sala:
 
     def get_wp(self, id_wp: int) -> Waypoint:
         return self.waypoints[id_wp]
+    
+    def entrar(self, persona):
+        """Añade una persona a la sala si no está ya."""
+        if persona not in self.personas:
+            self.personas.append(persona)
+
+    def salir(self, persona):
+        """Elimina una persona de la sala si está dentro."""
+        if persona in self.personas:
+            self.personas.remove(persona)
 
     # ---------- Pathfinding genérico (A*) ----------
     # Reutilizable. Las subclases pueden:

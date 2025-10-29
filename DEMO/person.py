@@ -26,13 +26,14 @@ class Person:
         self.mundo = facultad
         self.schedule = schedule
         self.present = True
+        self.sala = None
 
         # Personalizacion
         self.height = min(np.random.normal(1.777, 0.1), 1.95)
         self.speed = np.random.normal(0.5, 0.05)
 
         # Starting position and destiny
-        self.sala = sala
+        self._cambiar_sala(sala)
         self.position = self.mundo[self.sala].get_wp(self.mundo[self.sala].salida_id).position
         self.ground_y = ground_y
         self.position.y = self.ground_y
@@ -49,6 +50,9 @@ class Person:
         self.sentado = False             # si ya está sentado
         self.objetivo_asiento = None     # id del asiento hacia el que se dirige
         self.destino_sala = None         # sala a la que se está moviendo
+
+        # Control de infeccion
+        self.is_infected = is_infected
 
     # =========================================================
     # ANIMACIÓN DE MOVIMIENTO (ya existente en tu código)
@@ -152,7 +156,7 @@ class Person:
     def _terminar_camino(self):
         """Acciones al terminar un camino."""
         if self.destino_sala:
-            self.sala = self.destino_sala
+            self._cambiar_sala(self.destino_sala)
             self.destino_sala = None
             self.camino_actual = []
             self.indice_camino = 0
@@ -166,6 +170,24 @@ class Person:
             # self.sentado = True
             self.camino_actual = []
             print(f"[PERSONA] Sentada en {self.sala}.")
+    
+    def _cambiar_sala(self, destino):
+        """Cambia la persona de una sala a otra actualizando ambas listas."""
+        if self.sala == destino:
+            return  # ya está en esa sala
+
+        # Sacarla de la sala actual (si existe)
+        if self.sala in self.mundo:
+            self.mundo[self.sala].salir(self)
+
+        # Entrarla en la nueva sala
+        if destino in self.mundo:
+            self.mundo[destino].entrar(self)
+
+        # Actualizar el atributo local
+        self.sala = destino
+
+        print(f"[PERSONA] Ahora está en la sala {self.sala}")        
 
     # =========================================================
     # UPDATE Y RENDER
