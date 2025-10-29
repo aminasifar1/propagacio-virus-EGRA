@@ -252,7 +252,7 @@ class Clase(Sala):
 
         # Marcar los asientos (reinicia ocupación a vacía)
         for aid in data.get("asientos", []):
-            clase.marcar_asiento(aid)
+            clase.marcar_asiento(int(aid))
 
         return clase
 

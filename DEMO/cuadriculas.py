@@ -41,7 +41,7 @@ def generar_cuadricula_rectangular_8(ancho_x: int, largo_z: int,
                     ni, nj = i + dz, j + dx
                     if 0 <= ni < largo_z and 0 <= nj < ancho_x:
                         vecino_idx = ni * ancho_x + nj
-                        vecinos.append(str(vecino_idx))
+                        vecinos.append(str(vecino_idx + 200))
 
             con[str(idx)] = vecinos
 

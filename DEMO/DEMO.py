@@ -11,6 +11,8 @@ import random
 from facultat import Sala, Clase, Pasillo
 from escenario import Escenario
 from camera import Camera
+from person import Person
+from marker import Marker
 
 def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3]]:
     """
@@ -115,7 +117,7 @@ class MotorGrafico:
     - renderizado
     """
 
-    def __init__(self, scene_path, win_size=(1536, 864)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1536, 864)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD para moverte, TAB para soltar ratón")
         self.WIN_SIZE = win_size
@@ -132,6 +134,9 @@ class MotorGrafico:
 
         # Camera
         self.camera = Camera(self)
+
+        # Marker
+        self.marker = Marker(self.ctx, self.camera)
 
         # Para renderizar la UI de pygame sobre OpenGL
         self.ui_surface = pg.Surface(self.WIN_SIZE, pg.SRCALPHA)
@@ -151,6 +156,23 @@ class MotorGrafico:
         tri_data, normals, line_data, bounding_box = load_obj(scene_path)
         self.object = Escenario(self.ctx, self.camera, tri_data, normals, line_data, bounding_box)
         self.object.app = self
+
+        # Persones
+        tri_data, normals, line_data, bounding_box = load_obj(person_path)
+        self.people = []
+        for i in range(10):
+            self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula2'], 'aula2'))
+
+        first_person = self.people[0]
+        self.person_vao_tri = self.ctx.vertex_array(
+            self.object.shader,
+            [(first_person.tri_vbo, '3f', 'in_position'),
+                (first_person.nrm_vbo, '3f', 'in_normal')]
+        )
+        self.person_vao_line = self.ctx.vertex_array(
+            self.object.shader,
+            [(first_person.line_vbo, '3f', 'in_position')]
+        )
 
         min_coords, max_coords = self.object.bounding_box
         print(f"Escenari carregat. Bounding Box:")
@@ -181,6 +203,7 @@ class MotorGrafico:
             last_frame_time = current_frame_time
 
             for e in pg.event.get():
+                self.marker.handle_input(pg.key.get_pressed())
                 self.camera.handle_mouse(e)
                 if e.type == pg.QUIT or (e.type == pg.KEYDOWN and e.key == pg.K_ESCAPE):
                     pg.event.set_grab(False)
@@ -200,6 +223,12 @@ class MotorGrafico:
             self.ctx.clear(0.07, 0.07, 0.09)
 
             self.object.render()
+            self.marker.render()
+            light_pos = self.object.update_light_position()
+            for p in self.people:
+                p.update(self.delta_time)
+                p.render(self.object.shader, self.person_vao_tri, 
+                                self.person_vao_line, light_pos)
 
             # --- CONTROL FPS ---
             self.frame_count += 1
@@ -222,6 +251,7 @@ if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
     DATA_PATH = os.path.join(ROOT_PATH, "DEMO" ,"data", "salas")
     SCENE_PATH = os.path.join(ROOT_PATH, "Models" ,"OBJ.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH, "Models" ,"person_1.obj")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # Crear diccionario global 'facultad'
@@ -251,8 +281,10 @@ if __name__ == "__main__":
 
     print(f"[MAIN] Total de salas cargadas: {len(facultad)}\n")
 
+    print(facultad['aula2'].waypoints[211].conexiones)
+
     # Crear motor gráfico y registrar elementos que se deban renderizar
-    motor = MotorGrafico(SCENE_PATH)
+    motor = MotorGrafico(SCENE_PATH, PERSON_PATH, facultad)
 
     # Inicializar y ejecutar motor
     motor.start()

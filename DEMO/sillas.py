@@ -19,7 +19,7 @@ def generar_cuadricula_filas(ancho_x: int, largo_z: int,
     con = {}
 
     # Crear posiciones
-    index = 0
+    index = 300
     for i in range(largo_z):     # Z
         for j in range(ancho_x): # X
             x = x0 + j * espaciado_x
@@ -30,7 +30,7 @@ def generar_cuadricula_filas(ancho_x: int, largo_z: int,
     # Crear conexiones solo entre vecinos de la misma fila
     for i in range(largo_z):
         for j in range(ancho_x):
-            idx = i * ancho_x + j
+            idx = i * ancho_x + j + 300
             vecinos = []
             # Conectar con el de la izquierda
             if j > 0:
@@ -58,3 +58,4 @@ data = generar_cuadricula_filas(
 )
 
 print(json.dumps(data, indent=4))
+print(list(data["con"].keys()))
