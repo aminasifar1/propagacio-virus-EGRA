@@ -50,11 +50,11 @@ podeis sacar facil la posicion y conexiones de cada silla del aula para hacer el
 """
 
 data = generar_cuadricula_filas(
-    ancho_x=2, # numero de sillas por fila
-    largo_z=2, # numero de filas
-    inicio=(0, 0), # Posicion de la silla de alante a la izquierda
-    espaciado_x=1, # Distancia entre una silla y la de su derecha
-    espaciado_z=1 # Distancia entre una silla y la de detras
+    ancho_x=4, # numero de sillas por fila
+    largo_z=11, # numero de filas
+    inicio=(-3.4, 4.5), # Posicion de la silla de alante a la izquierda
+    espaciado_x=0.7, # Distancia entre una silla y la de su derecha
+    espaciado_z=0.9 # Distancia entre una silla y la de detras
 )
 
 print(json.dumps(data, indent=4))

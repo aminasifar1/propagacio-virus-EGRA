@@ -195,7 +195,9 @@ class Clase(Sala):
     # Marcar qué nodos son asientos
     def marcar_asiento(self, id_wp: int) -> None:
         if id_wp not in self.waypoints:
-            raise KeyError(f"Asiento {id_wp} no existe en sala {self.id_sala}.")
+            # raise KeyError(f"Asiento {id_wp} no existe en sala {self.id_sala}.")
+            print(f"[Sala {self.id_sala}] Aviso: asiento {id_wp} no existe.")
+            return
         if id_wp not in self.asientos:
             self.asientos.append(id_wp)
         self.ocupado.setdefault(id_wp, False)

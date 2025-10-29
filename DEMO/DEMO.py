@@ -161,7 +161,7 @@ class MotorGrafico:
         tri_data, normals, line_data, bounding_box = load_obj(person_path)
         self.people = []
         for i in range(10):
-            self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula2'], 'aula2'))
+            self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula3'], 'aula3'))
 
         first_person = self.people[0]
         self.person_vao_tri = self.ctx.vertex_array(
