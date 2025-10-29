@@ -45,17 +45,6 @@ class Person:
         if is_infected:
             self.infect()
 
-    def infect(self):
-        """Infecta a la persona creant un anell."""
-        if not self.ring:
-            # Crea l'anell a la posició actual de la persona
-            self.ring = Ring(
-                self.ctx, self.camera,
-                radius=0.9, thickness=0.15, height=0.1,
-                position=self.position + glm.vec3(0, 0.05, 0)  # Offset Y per l'anell
-            )
-            print("Una persona s'ha infectat!")
-
     def update(self, delta_time):
         """Actualiza la posición siguiendo waypoints."""
         if not self.target_waypoint:
