@@ -13,6 +13,7 @@ from escenario import Escenario
 from camera import Camera
 from person import Person
 from marker import Marker
+from virus import Virus
 
 def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3]]:
     """
@@ -155,6 +156,9 @@ class MotorGrafico:
         self.tick_timer = 0.0
         self.infection_probability = 1
 
+        self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1)
+
+
         # Scenario
         tri_data, normals, line_data, bounding_box = load_obj(scene_path)
         self.object = Escenario(self.ctx, self.camera, tri_data, normals, line_data, bounding_box)
@@ -165,6 +169,8 @@ class MotorGrafico:
         self.people = []
         for i in range(10):
             self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula2'], 'pasillo'))
+            if i == 0:
+                self.virus.infectar(self.people[0])
 
         first_person = self.people[0]
         self.person_vao_tri = self.ctx.vertex_array(
@@ -219,6 +225,7 @@ class MotorGrafico:
 
             if self.tick_timer >= self.tick_duration:
                 self.tick_timer -= self.tick_duration
+                self.virus.check_infections(self.mundo)
             
             self.camera.update_matrices()
             

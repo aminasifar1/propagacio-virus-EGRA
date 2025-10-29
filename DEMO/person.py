@@ -9,6 +9,7 @@ import random
 from facultat import Sala, Clase, Pasillo
 from escenario import Escenario
 from camera import Camera
+from ring import Ring
 
 
 class Person:
@@ -27,6 +28,7 @@ class Person:
         self.schedule = schedule
         self.present = True
         self.sala = None
+        self.ring = None
 
         # Personalizacion
         # self.height = min(np.random.normal(1.777, 0.1), 1.95)
