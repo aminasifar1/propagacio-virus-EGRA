@@ -28,7 +28,9 @@ class Person:
         self.present = True
 
         # Personalizacion
-        self.height = min(np.random.normal(1.777, 0.1), 1.95)
+        # self.height = min(np.random.normal(1.777, 0.1), 1.95)
+        # height between 1.6 and 1.9
+        self.height = min(max(np.random.normal(1.75, 0.1), 1.6), 1.9)
         self.speed = np.random.normal(0.5, 0.05)
 
         # Starting position and destiny

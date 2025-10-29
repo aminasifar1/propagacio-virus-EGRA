@@ -251,7 +251,7 @@ if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
     DATA_PATH = os.path.join(ROOT_PATH, "DEMO" ,"data", "salas")
     SCENE_PATH = os.path.join(ROOT_PATH, "Models" ,"OBJ.obj")
-    PERSON_PATH = os.path.join(ROOT_PATH, "Models" ,"person_1.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH, "Models" ,"person.obj")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # Crear diccionario global 'facultad'
