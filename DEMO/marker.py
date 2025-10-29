@@ -56,18 +56,22 @@ class Marker:
     # --- Movimiento del marcador ---
     def handle_input(self, keys):
         """Mover el marcador según las teclas presionadas."""
+        # Detectar si Alt está presionado para aumentar velocidad
+        speed_multiplier = 5.0 if (keys[pg.K_LALT] or keys[pg.K_RALT]) else 1.0
+        current_speed = self.speed * speed_multiplier
+
         if keys[pg.K_UP]:
-            self.position.z -= self.speed
+            self.position.z -= current_speed
         if keys[pg.K_DOWN]:
-            self.position.z += self.speed
+            self.position.z += current_speed
         if keys[pg.K_LEFT]:
-            self.position.x -= self.speed
+            self.position.x -= current_speed
         if keys[pg.K_RIGHT]:
-            self.position.x += self.speed
+            self.position.x += current_speed
         if keys[pg.K_p]:
-            self.position.y += self.speed
+            self.position.y += current_speed
         if keys[pg.K_l]:
-            self.position.y -= self.speed
+            self.position.y -= current_speed
         if keys[pg.K_RETURN]:
             self.print_position()
 
