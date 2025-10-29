@@ -17,6 +17,7 @@ class Ring:
         self.color = color
         self.position = position
         self.m_model = glm.translate(glm.mat4(), self.position)
+        self.contagion_radius = radius + thickness
 
         # --- Generació de la geometria 3D i normals ---
         vertices = []
