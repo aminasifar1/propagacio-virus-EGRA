@@ -15,6 +15,7 @@ from person import Person
 from puff import PuffSystem
 from waypoint import WaypointVisualizer
 from marker import Marker
+from virus import Virus
 
 
 class ViewerApp:
@@ -42,6 +43,8 @@ class ViewerApp:
         self.tick_duration = 0.2
         self.tick_timer = 0.0
         self.infection_probability = 1
+
+        self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1)
 
         self.object = Object3D(self.ctx, obj_path, self.camera)
         self.object.app = self
@@ -155,28 +158,6 @@ class ViewerApp:
                         self.pathfinding.connect(current, neighbor)
 
 
-    # --- check_infections ---
-    def check_infections(self):
-        if not self.people: return
-        infected = [p for p in self.people if p.ring]
-        uninfected = [p for p in self.people if not p.ring]
-        if not uninfected: return
-
-        newly_infected = []
-        radius = 1.0
-        for inf in infected:
-            for uninf in uninfected:
-                if uninf in newly_infected: continue
-                if glm.length(inf.position - uninf.position) < radius:
-                    if random.random() < self.infection_probability:
-                        newly_infected.append(uninf)
-
-        for p in newly_infected:
-            p.infect()
-            puff_pos = p.position + glm.vec3(0, 1, 0)
-            self.puff_system.create_puff(puff_pos, num_particles=12)
-
-
     # --- render_ui_to_texture ---
     def render_ui_to_texture(self):
         num_infected = sum(1 for p in self.people if p.ring)
@@ -265,7 +246,7 @@ class ViewerApp:
             self.tick_timer += self.delta_time
             if self.tick_timer >= self.tick_duration:
                 self.tick_timer -= self.tick_duration
-                self.check_infections()
+                self.virus.check_infections(self.people)
 
             self.camera.update_matrices()
             self.ctx.clear(0.07, 0.07, 0.09)
