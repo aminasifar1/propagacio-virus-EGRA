@@ -7,85 +7,6 @@ import time
 import math
 import random
 
-class Marker:
-    def __init__(self, ctx, camera):
-        self.ctx = ctx
-        self.camera = camera
-        self.position = glm.vec3(0, 0, 0)
-        self.speed = 0.1  # velocidad de movimiento
-        self.size = 0.1   # tamaño del cubo marcador
-
-        # Vertices de un cubo pequeño centrado en (0,0,0)
-        s = self.size
-        vertices = np.array([
-            [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s],
-            [-s, -s,  s], [s, -s,  s], [s, s,  s], [-s, s,  s]
-        ], dtype='f4')
-
-        indices = np.array([
-            0, 1, 2, 2, 3, 0,   # trasera
-            4, 5, 6, 6, 7, 4,   # frontal
-            0, 1, 5, 5, 4, 0,   # inferior
-            2, 3, 7, 7, 6, 2,   # superior
-            1, 2, 6, 6, 5, 1,   # derecha
-            3, 0, 4, 4, 7, 3    # izquierda
-        ], dtype='i4')
-
-        # Programa simple
-        self.prog = self.ctx.program(
-            vertex_shader='''
-                #version 330
-                uniform mat4 m_proj;
-                uniform mat4 m_view;
-                uniform mat4 m_model;
-                in vec3 in_vert;
-                void main() {
-                    gl_Position = m_proj * m_view * m_model * vec4(in_vert, 1.0);
-                }
-            ''',
-            fragment_shader='''
-                #version 330
-                out vec4 fragColor;
-                void main() {
-                    fragColor = vec4(1.0, 0.0, 0.0, 1.0); // rojo
-                }
-            '''
-        )
-
-        self.vbo = self.ctx.buffer(vertices.tobytes())
-        self.ibo = self.ctx.buffer(indices.tobytes())
-        self.vao = self.ctx.vertex_array(
-            self.prog, [(self.vbo, '3f', 'in_vert')], self.ibo
-        )
-
-    # --- Movimiento del marcador ---
-    def handle_input(self, keys):
-        """Mover el marcador según las teclas presionadas."""
-        if keys[pg.K_UP]:
-            self.position.z -= self.speed
-        if keys[pg.K_DOWN]:
-            self.position.z += self.speed
-        if keys[pg.K_LEFT]:
-            self.position.x -= self.speed
-        if keys[pg.K_RIGHT]:
-            self.position.x += self.speed
-        if keys[pg.K_p]:
-            self.position.y += self.speed
-        if keys[pg.K_l]:
-            self.position.y -= self.speed
-
-    # --- Mostrar posición actual ---
-    def print_position(self):
-        print(f"📍 Posición marcador: x={self.position.x:.2f}, y={self.position.y:.2f}, z={self.position.z:.2f}")
-
-    # --- Dibujado del marcador ---
-    def render(self):
-        model = glm.translate(glm.mat4(1.0), self.position)
-        self.prog['m_proj'].write(self.camera.m_proj)
-        self.prog['m_view'].write(self.camera.m_view)
-        self.prog['m_model'].write(model)
-        self.vao.render()
-
 def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3]]:
     """
     Carrega vèrtexs, cares (triangles) i arestes d'un fitxer OBJ, calculant normals per vèrtex
@@ -395,6 +316,7 @@ class Ring:
         self.color = color
         self.position = position
         self.m_model = glm.translate(glm.mat4(), self.position)
+        self.contagion_radius = radius + thickness
 
         # --- Generació de la geometria 3D i normals ---
         vertices = []
@@ -986,6 +908,58 @@ class InfectionBar:
         infected_label_rect.topright = (self.bar_x + self.bar_width, self.bar_y + self.bar_height + 5)
         screen.blit(infected_label, infected_label_rect)
 
+class Virus:
+    def __init__(self,app,td,tt,ip,r):
+        self.puff_system = app.puff_system
+        self.tick_duration = td
+        self.tick_timer = tt 
+        self.infection_probability = ip
+        self.radio = r
+    
+    def update(self,td,tt,ip,r):
+        self.tick_duration = td
+        self.tick_timer = tt 
+        self.infection_probability = ip
+        self.radio = r
+    
+    def check_infections(self,people):
+        """Comprova col·lisions per transferir infecció."""
+        if not people:
+            return
+
+        infected_people = []
+        uninfected_people = []
+        for p in people:
+            if p.ring:
+                infected_people.append(p)
+            else:
+                uninfected_people.append(p)
+        
+        if not uninfected_people:
+            return
+
+        newly_infected = []
+
+        for infected in infected_people:
+            infection_radius = infected.ring.contagion_radius
+            for uninfected in uninfected_people:
+                if uninfected in newly_infected:
+                    continue
+                
+                dist = glm.length(infected.position - uninfected.position)
+                
+                if dist < infection_radius:
+                    if random.random() < self.infection_probability:
+                        newly_infected.append(uninfected)
+        
+        # Infectar als nous i crear efecte puff
+        for person_to_infect in newly_infected:
+            person_to_infect.infect()
+            # CREAR EFECTO PUFF EN LA POSICIÓN DE LA PERSONA
+            puff_position = person_to_infect.position + glm.vec3(0, 1.0, 0)
+            self.puff_system.create_puff(puff_position, num_particles=12)
+
+
 class ViewerApp:
     def __init__(self, obj_path, win_size=(1536, 864)):
         pg.init()
@@ -1019,12 +993,12 @@ class ViewerApp:
         self.tick_timer = 0.0
         self.infection_probability = 1
 
+        self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1)
+
         self.object = Object3D(self.ctx, obj_path, self.camera)
         self.object.app = self
 
         self.show_grid = False
-
-        self.marker = Marker(self.ctx, self.camera)
 
         min_coords, max_coords = self.object.bounding_box
         print(f"Escenari carregat. Bounding Box:")
@@ -1113,38 +1087,7 @@ class ViewerApp:
                         neighbor = wp_grid.get((x+dx, z+dz))
                         if neighbor:
                             self.pathfinding.connect(current, neighbor)
-
-    def check_infections(self):
-        """Comprova col·lisions per transferir infecció."""
-        if not self.people:
-            return
-
-        infected_people = [p for p in self.people if p.ring]
-        uninfected_people = [p for p in self.people if not p.ring]
-        
-        if not uninfected_people:
-            return
-
-        newly_infected = []
-        infection_radius = 1.0
-
-        for infected in infected_people:
-            for uninfected in uninfected_people:
-                if uninfected in newly_infected:
-                    continue
-                
-                dist = glm.length(infected.position - uninfected.position)
-                
-                if dist < infection_radius:
-                    if random.random() < self.infection_probability:
-                        newly_infected.append(uninfected)
-        
-        # Infectar als nous i crear efecte puff
-        for person_to_infect in newly_infected:
-            person_to_infect.infect()
-            # CREAR EFECTO PUFF EN LA POSICIÓN DE LA PERSONA
-            puff_position = person_to_infect.position + glm.vec3(0, 1.0, 0)
-            self.puff_system.create_puff(puff_position, num_particles=12)
+                        
 
     def render_ui_to_texture(self):
         """Renderiza la UI de pygame en una textura de OpenGL."""
@@ -1228,9 +1171,6 @@ class ViewerApp:
                 self.delta_time = 1e-6 
             last_frame_time = current_frame_time
             
-            keys = pg.key.get_pressed()
-            self.marker.handle_input(keys)
-
             for e in pg.event.get():
                 self.camera.handle_mouse(e)
                 if e.type == pg.QUIT or (e.type == pg.KEYDOWN and e.key == pg.K_ESCAPE):
@@ -1241,8 +1181,7 @@ class ViewerApp:
                     if e.key == pg.K_g:
                         self.show_grid = not self.show_grid
                         print(f"Graella de waypoints: {'Visible' if self.show_grid else 'Oculta'}")
-                    if e.key == pg.K_RETURN:
-                        self.marker.print_position()
+
             # --- LÒGICA D'ACTUALITZACIÓ ---
             
             self.camera.move(self.delta_time)
@@ -1256,7 +1195,7 @@ class ViewerApp:
 
             if self.tick_timer >= self.tick_duration:
                 self.tick_timer -= self.tick_duration
-                self.check_infections()
+                self.virus.check_infections(self.people)
             
             self.camera.update_matrices()
             
@@ -1267,8 +1206,6 @@ class ViewerApp:
 
             if self.show_grid:
                 self.waypoint_visualizer.render()
-
-            self.marker.render()
             
             if self.people and self.person_vao_tri:
                 light_pos = self.object.update_light_position()

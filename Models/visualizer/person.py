@@ -7,6 +7,8 @@ import time
 import math
 import random
 
+from object3d import load_obj
+from ring import Ring
 
 class Person:
     def __init__(self, ctx, camera, obj_path, pathfinding_system, ground_y=0.0, is_infected=False):

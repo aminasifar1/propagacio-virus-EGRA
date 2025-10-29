@@ -15,7 +15,6 @@ class Waypoint:
 
 
 
-
 class WaypointVisualizer:
     """Renderitza la xarxa de Waypoints com a línies."""
 

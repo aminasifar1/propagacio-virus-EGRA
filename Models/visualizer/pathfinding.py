@@ -7,6 +7,8 @@ import time
 import math
 import random
 
+from waypoint import Waypoint
+
 
 class PathfindingSystem:
     """Sistema simple de navegación con waypoints."""
@@ -39,3 +41,6 @@ class PathfindingSystem:
                 min_dist = dist
                 nearest = wp
         return nearest
+
+
+#ajustar la graella para ajustar en cada clase en vez de una genral en todas
