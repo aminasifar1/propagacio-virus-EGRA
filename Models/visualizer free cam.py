@@ -805,6 +805,10 @@ class Person:
         self.nrm_vbo = self.ctx.buffer(normals)
         self.line_vbo = self.ctx.buffer(line_data)
         
+        self.height = np.random.normal(1.777, 0.1)
+        self.height = min(self.height, 1.95)
+        print("Altura del modelo:", self.height)
+
         # Posición inicial en un waypoint aleatorio
         if self.pathfinding.waypoints:
             start_wp = random.choice(self.pathfinding.waypoints)
@@ -879,7 +883,7 @@ class Person:
         m_model = glm.mat4(1.0)
         m_model = glm.translate(m_model, self.position)
         m_model = glm.rotate(m_model, self.rotation_angle, glm.vec3(0, 1, 0))
-        # m_model = glm.scale(m_model, glm.vec3(0.8, 0.8, 0.8)) # Escala 0.8
+        m_model = glm.scale(m_model, glm.vec3(self.height / 1.71)) 
         return m_model
     
     def render(self, shader, vao_tri, vao_line, light_pos):
