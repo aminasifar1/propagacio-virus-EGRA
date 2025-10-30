@@ -14,7 +14,7 @@ class Camera:
         self.aspect_ratio = app.WIN_SIZE[0] / app.WIN_SIZE[1]
 
         # Posición y rotación de cámara tipo FPS
-        self.position = glm.vec3(0, 2, 5)
+        self.position = glm.vec3(2, 4, 40)
         self.yaw = -90.0  # Ángulo horizontal
         self.pitch = 0.0  # Ángulo vertical
         self.front = glm.vec3(0, 0, -1)

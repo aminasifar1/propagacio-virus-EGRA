@@ -11,13 +11,14 @@ class Ring:
     """Anell amb volum, paràmetres ajustables i afectat per la il·luminació."""
 
     def __init__(self, ctx, camera, radius=0.9, thickness=0.15, height=0.1, segments=8, color=(1.0, 0.2, 0.2),
-                 position=glm.vec3(0, 0, 0)):
+                 position=glm.vec3(0, 0, 0), altura= 1):
         self.ctx = ctx
         self.camera = camera
         self.color = color
         self.position = position
         self.m_model = glm.translate(glm.mat4(), self.position)
         self.contagion_radius = radius + thickness
+        self.altura = altura
 
         # --- Generació de la geometria 3D i normals ---
         vertices = []
@@ -136,6 +137,10 @@ class Ring:
         self.shader['ring_color'].value = self.color
         self.shader['view_pos'].value = tuple(self.camera.position)
 
+    def update(self, position):
+        position.y = self.altura
+        self.position = position
+    
     def render(self, light_pos):  # Afegim light_pos com a argument
         self.m_model = glm.translate(glm.mat4(), self.position)
 

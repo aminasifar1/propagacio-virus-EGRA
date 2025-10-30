@@ -10,10 +10,11 @@ from facultat import Sala, Clase, Pasillo
 from escenario import Escenario
 from camera import Camera
 from ring import Ring
+from animacion import PuffSystem
 
 
 class Person:
-    def __init__(self, ctx, camera, tri_data, normals, line_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, is_infected=False):
+    def __init__(self, ctx, camera, tri_data, normals, line_data, facultad, schedule=None, sala='pasillo', ground_y=0.1):
         """
         Crea una persona que camina siguiendo waypoints.
         ground_y: Altura del suelo donde deben caminar las personas
@@ -29,6 +30,7 @@ class Person:
         self.present = True
         self.sala = None
         self.ring = None
+        self.puff = PuffSystem(self.ctx, self.camera)
 
         # Personalizacion
         # self.height = min(np.random.normal(1.777, 0.1), 1.95)
@@ -55,8 +57,18 @@ class Person:
         self.objetivo_asiento = None     # id del asiento hacia el que se dirige
         self.destino_sala = None         # sala a la que se está moviendo
 
-        # Control de infeccion
-        self.is_infected = is_infected
+    # =========================================================
+    # CONTAGION
+    # =========================================================
+    def infectar(self, distance):
+        self.ring = Ring(
+            self.ctx, self.camera,
+            radius=distance, thickness=0.15, height=0.1,
+            position=self.position,
+            altura=self.ground_y # Offset Y per l'anell
+        )
+        puff_position = self.position + glm.vec3(0, 1.0, 0)
+        self.puff.create_puff(puff_position, num_particles=12)
 
     # =========================================================
     # ANIMACIÓN DE MOVIMIENTO (ya existente en tu código)
@@ -72,6 +84,8 @@ class Person:
         distancia_total = glm.length(direccion)
 
         if distancia_total == 0:
+            self.indice_paso = 0
+            self.en_movimiento = False
             return
 
         # Vector de dirección normalizado
@@ -142,10 +156,14 @@ class Person:
         """Calcula el camino desde la sala actual hasta la sala de destino."""
         sala_origen = self.mundo[self.sala]
         sala_destino = self.mundo[destino]
+        id_actual = self._waypoint_mas_cercano(sala_origen)
 
         # 1. Si está en una clase → ir a la salida
         if isinstance(sala_origen, Clase):
-            self.camino_actual = sala_origen.get_path(sala_origen.salida_id, sala_origen.entrada_id)
+            if id_actual == sala_origen.salida_id:
+                self.camino_actual = [sala_origen.salida_id, sala_origen.entrada_id]
+            else:
+                self.camino_actual = sala_origen.get_path(id_actual, sala_origen.salida_id)
             self.indice_camino = 0
             self.destino_sala = "pasillo"
             return
@@ -153,9 +171,20 @@ class Person:
         # 2. Si está en un pasillo → ir hacia la entrada del destino
         if isinstance(sala_origen, Pasillo):
             entrada_destino = sala_destino.entrada_id
-            self.camino_actual = sala_origen.get_path(sala_origen.salida_id, entrada_destino)
+            self.camino_actual = sala_origen.get_path(id_actual, entrada_destino)
             self.indice_camino = 0
             self.destino_sala = destino
+    
+    def _waypoint_mas_cercano(self, sala):
+        """Devuelve el ID del waypoint más cercano a la posición actual dentro de una sala."""
+        min_dist = float("inf")
+        id_mas_cercano = None
+        for wid, wp in sala.waypoints.items():
+            d = glm.distance(wp.position, self.position)
+            if d < min_dist:
+                min_dist = d
+                id_mas_cercano = wid
+        return id_mas_cercano
 
     def _terminar_camino(self):
         """Acciones al terminar un camino."""
@@ -202,6 +231,11 @@ class Person:
         - Actualiza animación de pasos.
         - Decide nuevos destinos según el horario.
         """
+        self.puff.update(delta_time)
+
+        if self.ring:
+            self.ring.update(self.position) 
+
         # Actualizar animación si está en movimiento
         self.actualizar_movimiento()
         if self.en_movimiento:
@@ -223,7 +257,8 @@ class Person:
                     self.objetivo_asiento = sala.asiento_libre_aleatorio()
                     if self.objetivo_asiento is not None:
                         # sala.ocupar_asiento(self.objetivo_asiento)
-                        self.camino_actual = sala.get_path(sala.salida_id, self.objetivo_asiento)
+                        id_actual = self._waypoint_mas_cercano(self.mundo[sala_actual])
+                        self.camino_actual = sala.get_path(id_actual, self.objetivo_asiento)
                         self.indice_camino = 0
                     else:
                         print(f"[{sala_actual}] No hay asientos libres.")
@@ -257,11 +292,12 @@ class Person:
         m_model = glm.mat4(1.0)
         m_model = glm.translate(m_model, self.position)
         m_model = glm.rotate(m_model, self.rotation_angle, glm.vec3(0, 1, 0))
-        m_model = glm.scale(m_model, glm.vec3(self.height / 1.71))
+        m_model = glm.scale(m_model, glm.vec3((1, self.height / 1.71, 1)))
         return m_model
 
     def render(self, shader, vao_tri, vao_line, light_pos):
         """Renderiza la persona i el seu anell si existeix."""
+        self.puff.render()
 
         # Renderitzar la persona (malla)
         m_model = self.get_model_matrix()
@@ -275,3 +311,6 @@ class Person:
         vao_tri.render(mode=mgl.TRIANGLES)
         self.ctx.line_width = 1.0
         vao_line.render(mode=mgl.LINES)
+
+        if self.ring:
+            self.ring.render(light_pos)

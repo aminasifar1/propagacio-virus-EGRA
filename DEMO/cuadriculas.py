@@ -19,7 +19,7 @@ def generar_cuadricula_rectangular_8(ancho_x: int, largo_z: int,
     con = {}
 
     # Crear posiciones
-    index = 200
+    index = 100
     for i in range(largo_z):     # Z
         for j in range(ancho_x): # X
             x = x0 + j * espaciado_x
@@ -30,7 +30,7 @@ def generar_cuadricula_rectangular_8(ancho_x: int, largo_z: int,
     # Crear conexiones (8 direcciones)
     for i in range(largo_z):
         for j in range(ancho_x):
-            idx = i * ancho_x + j + 200
+            idx = i * ancho_x + j + 100
             vecinos = []
 
             # Recorremos los desplazamientos de las 8 direcciones
@@ -41,7 +41,7 @@ def generar_cuadricula_rectangular_8(ancho_x: int, largo_z: int,
                     ni, nj = i + dz, j + dx
                     if 0 <= ni < largo_z and 0 <= nj < ancho_x:
                         vecino_idx = ni * ancho_x + nj
-                        vecinos.append(str(vecino_idx + 200))
+                        vecinos.append(str(vecino_idx + 100))
 
             con[str(idx)] = vecinos
 
@@ -49,8 +49,8 @@ def generar_cuadricula_rectangular_8(ancho_x: int, largo_z: int,
 
 data = generar_cuadricula_rectangular_8(
     ancho_x=6, 
-    largo_z=9, 
-    inicio=(-8.5, 15.4), 
+    largo_z=6, 
+    inicio=(-8.5, 30.4), 
     espaciado_x=1.6, 
     espaciado_z=1.6
 )

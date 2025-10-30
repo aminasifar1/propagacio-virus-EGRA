@@ -154,10 +154,9 @@ class MotorGrafico:
 
         self.tick_duration = 0.2
         self.tick_timer = 0.0
-        self.infection_probability = 1
+        self.infection_probability = 0.2
 
-        self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1)
-
+        self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
 
         # Scenario
         tri_data, normals, line_data, bounding_box = load_obj(scene_path)
@@ -165,14 +164,14 @@ class MotorGrafico:
         self.object.app = self
 
         # Persones
-        tri_data, normals, line_data, bounding_box = load_obj(person_path)
+        self.p_tri_data, self.p_normals, self.p_line_data, bounding_box = load_obj(person_path)
+        self.simulando = False
+        self.tiempo_persona = 0  
+        self.intervalo_spawn = 4.0 
         self.people = []
-        for i in range(10):
-            self.people.append(Person(self.ctx, self.camera, tri_data, normals, line_data, facultad, ['aula2'], 'pasillo'))
-            if i == 0:
-                self.virus.infectar(self.people[0])
+        self.max_people = 50
 
-        first_person = self.people[0]
+        first_person = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo')
         self.person_vao_tri = self.ctx.vertex_array(
             self.object.shader,
             [(first_person.tri_vbo, '3f', 'in_position'),
@@ -187,6 +186,31 @@ class MotorGrafico:
         print(f"Escenari carregat. Bounding Box:")
         print(f"  MIN: {min_coords}")
         print(f"  MAX: {max_coords}")
+
+    # =========================================================
+    # EVENTOS
+    # =========================================================
+
+    def create_person(self, schedule=[], spawn='pasillo'):       
+        persona = Person(
+            ctx=self.ctx,
+            camera=self.camera,
+            tri_data=self.p_tri_data,
+            normals=self.p_normals,
+            line_data=self.p_line_data,
+            facultad=self.mundo,
+            schedule=schedule,
+            sala=spawn,
+        )
+        self.people.append(persona)
+        return persona
+    
+    def pulse(self):
+        pass
+
+    # =========================================================
+    # CICLO DE VIDA
+    # =========================================================
 
     def start(self):
         """Aquí inciaremos y cargaremos a todas las personas que vayamos a simular"""
@@ -203,6 +227,7 @@ class MotorGrafico:
 
         last_frame_time = time.time()
         while True:
+            dt = self.clock.tick(60) / 1000.0
             keys = pg.key.get_pressed()
 
             current_frame_time = time.time()
@@ -218,25 +243,49 @@ class MotorGrafico:
                     pg.event.set_grab(False)
                     pg.quit()
                     sys.exit()
+                elif e.type == pg.KEYDOWN:
+                    if e.key == pg.K_p:
+                        self.simulando = not self.simulando
+                        rooms = list(self.mundo.keys())
+                        rooms.remove('pasillo')
+                        clean_rooms = {}
+                        for i in rooms:
+                            clean_rooms[i] = 0
+                        print("▶️ Simulación:", "Iniciada" if self.simulando else "Pausada")
+                    elif e.key == pg.K_r:
+                        self.people.clear()
+                        self.tiempo_persona = 0.0
+                        print("🔄 Simulación reiniciada")
 
             self.camera.move(self.delta_time)
-
-            self.tick_timer += self.delta_time
-
-            if self.tick_timer >= self.tick_duration:
-                self.tick_timer -= self.tick_duration
-                self.virus.check_infections(self.mundo)
             
             self.camera.update_matrices()
             
             # --- RENDERITZAT ---
             self.ctx.clear(0.07, 0.07, 0.09)
 
+            if self.simulando:
+                self.tiempo_persona += dt
+                if self.tiempo_persona >= self.intervalo_spawn:
+                    selection = random.choice(rooms)
+                    p = self.create_person([selection])
+                    if  1 > clean_rooms[selection]:
+                        print("aqui")
+                        self.virus.infectar(p)
+                    clean_rooms[selection] += 1
+                    self.tiempo_persona = 0.0
+                self.tick_timer += self.delta_time
+
+                if self.tick_timer >= self.tick_duration:
+                    self.tick_timer -= self.tick_duration
+                    self.virus.check_infections(self.mundo)
+
             self.object.render()
             self.marker.render()
             light_pos = self.object.update_light_position()
             for p in self.people:
-                p.update(self.delta_time)
+                if self.simulando:
+                    p.update(self.delta_time)
                 p.render(self.object.shader, self.person_vao_tri, 
                                 self.person_vao_line, light_pos)
 

@@ -9,12 +9,13 @@ import random
 from ring import Ring
 
 class Virus:
-    def __init__(self,app,td,tt,ip,r):
+    def __init__(self,app,td,tt,ip,r, infection_distance):
         #self.puff_system = app.puff_system
         self.tick_duration = td
         self.tick_timer = tt 
         self.infection_probability = ip
         self.radio = r
+        self.infection_distance = infection_distance
     
     def update(self,td,tt,ip,r):
         self.tick_duration = td
@@ -25,11 +26,7 @@ class Virus:
     def infectar(self,person):
         """Infecta una persona i crea l'efecte puff."""
         if not person.ring:
-            person.ring = Ring(
-                person.ctx, person.camera,
-                radius=0.9, thickness=0.15, height=0.1,
-                position=person.position + glm.vec3(0, 0.05, 0)  # Offset Y per l'anell
-            )
+            person.infectar(self.infection_distance)
         print("Una persona s'ha infectat!")
         puff_position = person.position + glm.vec3(0, 1.0, 0)
         #self.puff_system.create_puff(puff_position, num_particles=12)
