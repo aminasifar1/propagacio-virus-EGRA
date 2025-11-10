@@ -309,8 +309,8 @@ if __name__ == "__main__":
     # Establecer la ruta base del proyecto
     ROOT_PATH = os.getcwd()
     DATA_PATH = os.path.join(ROOT_PATH, "DEMO" ,"data", "salas")
-    SCENE_PATH = os.path.join(ROOT_PATH, "Models" ,"OBJ.obj")
-    PERSON_PATH = os.path.join(ROOT_PATH, "Models" ,"person.obj")
+    SCENE_PATH = os.path.join(ROOT_PATH, "DEMO", "Models" ,"OBJ.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH, "DEMO", "Models" ,"person.obj")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # Crear diccionario global 'facultad'
