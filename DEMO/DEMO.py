@@ -14,6 +14,7 @@ from camera import Camera
 from person import Person
 from marker import Marker
 from virus import Virus
+from infectionbar import InfectionBar
 
 def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3]]:
     """
@@ -118,7 +119,7 @@ class MotorGrafico:
     - renderizado
     """
 
-    def __init__(self, scene_path, person_path, facultad, win_size=(1536, 864)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(640, 360)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD para moverte, TAB para soltar ratón")
         self.WIN_SIZE = win_size
@@ -142,6 +143,9 @@ class MotorGrafico:
         # Marker
         self.marker = Marker(self.ctx, self.camera)
 
+        # InfectionBar
+        self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
+
         # Para renderizar la UI de pygame sobre OpenGL
         self.ui_surface = pg.Surface(self.WIN_SIZE, pg.SRCALPHA)
 
@@ -155,6 +159,11 @@ class MotorGrafico:
         self.tick_duration = 0.2
         self.tick_timer = 0.0
         self.infection_probability = 0.2
+        
+        # Timer para actualizar la UI
+        self.ui_update_interval = 1.0  # Actualizar UI cada 1 segundo
+        self.ui_update_timer = 0.0
+        self.ui_needs_update = True  # Flag para forzar primera actualización
 
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
 
@@ -208,6 +217,75 @@ class MotorGrafico:
     def pulse(self):
         pass
 
+    def _render_ui_overlay(self):
+        """Renderiza la UI de Pygame sobre el contexto OpenGL."""
+        # Convertir superficie de Pygame a datos de píxeles
+        ui_string = pg.image.tostring(self.ui_surface, 'RGBA', True)
+        
+        # Crear textura OpenGL si no existe
+        if not hasattr(self, 'ui_texture'):
+            self.ui_texture = self.ctx.texture(self.WIN_SIZE, 4, ui_string)
+            self.ui_texture.filter = (mgl.LINEAR, mgl.LINEAR)
+            
+            # Crear shader simple para renderizar textura 2D
+            ui_vertex_shader = """
+            #version 330 core
+            in vec2 in_position;
+            in vec2 in_texcoord;
+            out vec2 v_texcoord;
+            
+            void main() {
+                gl_Position = vec4(in_position, 0.0, 1.0);
+                v_texcoord = in_texcoord;
+            }
+            """
+            
+            ui_fragment_shader = """
+            #version 330 core
+            uniform sampler2D ui_texture;
+            in vec2 v_texcoord;
+            out vec4 fragColor;
+            
+            void main() {
+                fragColor = texture(ui_texture, v_texcoord);
+            }
+            """
+            
+            self.ui_program = self.ctx.program(
+                vertex_shader=ui_vertex_shader,
+                fragment_shader=ui_fragment_shader
+            )
+            
+            # Quad que cubre toda la pantalla
+            vertices = np.array([
+                # pos (x, y)    # texcoord (u, v)
+                -1.0, -1.0,     0.0, 0.0,
+                 1.0, -1.0,     1.0, 0.0,
+                -1.0,  1.0,     0.0, 1.0,
+                 1.0,  1.0,     1.0, 1.0,
+            ], dtype='f4')
+            
+            self.ui_vbo = self.ctx.buffer(vertices)
+            self.ui_vao = self.ctx.vertex_array(
+                self.ui_program,
+                [(self.ui_vbo, '2f 2f', 'in_position', 'in_texcoord')]
+            )
+        else:
+            # Actualizar textura existente
+            self.ui_texture.write(ui_string)
+        
+        # Renderizar overlay con blending
+        self.ctx.enable(mgl.BLEND)
+        self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
+        self.ctx.disable(mgl.DEPTH_TEST)
+        
+        self.ui_texture.use(0)
+        self.ui_program['ui_texture'] = 0
+        self.ui_vao.render(mgl.TRIANGLE_STRIP)
+        
+        self.ctx.enable(mgl.DEPTH_TEST)
+        self.ctx.disable(mgl.BLEND)
+
     # =========================================================
     # CICLO DE VIDA
     # =========================================================
@@ -227,7 +305,8 @@ class MotorGrafico:
 
         last_frame_time = time.time()
         while True:
-            dt = self.clock.tick(60) / 1000.0
+            # dt = self.clock.tick(60) / 1000.0
+            dt = self.clock.tick() / 1000.0
             keys = pg.key.get_pressed()
 
             current_frame_time = time.time()
@@ -252,9 +331,11 @@ class MotorGrafico:
                         for i in rooms:
                             clean_rooms[i] = 0
                         print("▶️ Simulación:", "Iniciada" if self.simulando else "Pausada")
+                        self.ui_needs_update = True  # Actualizar UI al iniciar/pausar
                     elif e.key == pg.K_r:
                         self.people.clear()
                         self.tiempo_persona = 0.0
+                        self.ui_needs_update = True  # Actualizar UI al reiniciar
                         print("🔄 Simulación reiniciada")
 
             self.camera.move(self.delta_time)
@@ -274,6 +355,7 @@ class MotorGrafico:
                         self.virus.infectar(p)
                     clean_rooms[selection] += 1
                     self.tiempo_persona = 0.0
+                    self.ui_needs_update = True  # Actualizar UI inmediatamente cuando se crea una persona
                 self.tick_timer += self.delta_time
 
                 if self.tick_timer >= self.tick_duration:
@@ -289,6 +371,26 @@ class MotorGrafico:
                     p.update(self.delta_time)
                 p.render(self.object.shader, self.person_vao_tri, 
                                 self.person_vao_line, light_pos)
+
+            # --- ACTUALIZAR UI CADA 1 SEGUNDO ---
+            self.ui_update_timer += self.delta_time
+            if self.ui_update_timer >= self.ui_update_interval or self.ui_needs_update:
+                self.ui_update_timer = 0.0
+                self.ui_needs_update = False
+                
+                # Limpiar la superficie UI
+                self.ui_surface.fill((0, 0, 0, 0))
+                
+                # Contar infectados
+                num_infected = sum(1 for p in self.people if hasattr(p, 'ring') and p.ring is not None)
+                total_people = len(self.people)
+                
+                # Renderizar barra de infección
+                if total_people > 0:
+                    self.infection_bar.render(self.ui_surface, num_infected, total_people)
+            
+            # Convertir superficie de Pygame a textura OpenGL y renderizar
+            self._render_ui_overlay()
 
             # --- CONTROL FPS ---
             self.frame_count += 1
