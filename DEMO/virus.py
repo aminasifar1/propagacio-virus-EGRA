@@ -53,22 +53,35 @@ class Virus:
                 else:
                     uninfected_people.append(p)
         
+        for infected in infected_people:
+            infection_radius = infected.ring.contagion_radius
+            nuevo = Rastro(infection_radius,infected,
+                           self.infection_probability,
+                           evolution_rate = 10)
+            self.rastros.append(nuevo)
+
         if not uninfected_people:
             return
         
 
         for infected in infected_people:
             infection_radius = infected.ring.contagion_radius
-            nuevo = Rastro(infection_radius,infected,
-                           self.infection_probability,
-                           evolution_rate = 3)
-            self.rastros.append(nuevo)
             for uninfected in uninfected_people:
                 
                 dist = glm.length(infected.position - uninfected.position)
                 
                 if dist < infection_radius:
                     if random.random() < self.infection_probability:
+                        self.infectar(uninfected)
+                        uninfected_people.remove(uninfected)
+
+        for rastro in self.rastros:
+            for uninfected in uninfected_people:
+
+                dist = glm.length(rastro.position - uninfected.position)
+                
+                if dist < rastro.radius:
+                    if random.random() < rastro.infection_rate:
                         self.infectar(uninfected)
                         uninfected_people.remove(uninfected)
         
@@ -81,6 +94,7 @@ class Rastro:
     def __init__(self,rad,persona: Person ,infection_rate : float,evolution_rate : int):
         self.radius = rad
         self.infection_rate = infection_rate
+        self.position = persona.position
         self.evolution = [self.radius-(self.radius/evolution_rate)*i for i in range(evolution_rate+1)]
         self.ring = Ring(persona.ctx, persona.camera,
                          radius=self.radius, thickness=0.15, height=0.1,

@@ -305,8 +305,8 @@ class MotorGrafico:
 
         last_frame_time = time.time()
         while True:
-            # dt = self.clock.tick(60) / 1000.0
-            dt = self.clock.tick() / 1000.0
+            dt = self.clock.tick(60) / 1000.0
+            #dt = self.clock.tick() / 1000.0
             keys = pg.key.get_pressed()
 
             current_frame_time = time.time()
