@@ -140,6 +140,11 @@ class Ring:
     def update(self, position):
         position.y = self.altura
         self.position = position
+
+    def destroy(self):
+        self.vbo.release()
+        self.shader.release()
+        self.vao.release()
     
     def render(self, light_pos):  # Afegim light_pos com a argument
         self.m_model = glm.translate(glm.mat4(), self.position)

@@ -283,6 +283,7 @@ class MotorGrafico:
             self.object.render()
             self.marker.render()
             light_pos = self.object.update_light_position()
+            self.virus.render(light_pos)
             for p in self.people:
                 if self.simulando:
                     p.update(self.delta_time)

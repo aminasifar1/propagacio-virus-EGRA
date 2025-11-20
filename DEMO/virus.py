@@ -7,15 +7,18 @@ import time
 import math
 import random
 from ring import Ring
+from person import Person
 
 class Virus:
-    def __init__(self,app,td,tt,ip,r, infection_distance):
+    def __init__(self,app,td,tt,ip,r, infection_distance,evolve = 0):
         #self.puff_system = app.puff_system
         self.tick_duration = td
         self.tick_timer = tt 
         self.infection_probability = ip
         self.radio = r
         self.infection_distance = infection_distance
+        self.evolve = evolve
+        self.rastros = []
     
     def update(self,td,tt,ip,r):
         self.tick_duration = td
@@ -35,6 +38,12 @@ class Virus:
     def check_infections(self,mundo):
         """Comprova col·lisions per transferir infecció."""
 
+        for rastro in self.rastros:
+            check = rastro.evolve()
+            if check == -1:
+                self.rastros.remove(rastro)
+                rastro.destroy()
+
         infected_people = []
         uninfected_people = []
         for nombre in mundo:
@@ -50,6 +59,10 @@ class Virus:
 
         for infected in infected_people:
             infection_radius = infected.ring.contagion_radius
+            nuevo = Rastro(infection_radius,infected,
+                           self.infection_probability,
+                           evolution_rate = 3)
+            self.rastros.append(nuevo)
             for uninfected in uninfected_people:
                 
                 dist = glm.length(infected.position - uninfected.position)
@@ -58,3 +71,36 @@ class Virus:
                     if random.random() < self.infection_probability:
                         self.infectar(uninfected)
                         uninfected_people.remove(uninfected)
+        
+
+    def render(self,light_pos):
+        for rastro in self.rastros:
+            a = rastro.render(light_pos)
+
+class Rastro:
+    def __init__(self,rad,persona: Person ,infection_rate : float,evolution_rate : int):
+        self.radius = rad
+        self.infection_rate = infection_rate
+        self.evolution = [self.radius-(self.radius/evolution_rate)*i for i in range(evolution_rate+1)]
+        self.ring = Ring(persona.ctx, persona.camera,
+                         radius=self.radius, thickness=0.15, height=0.1,
+                         position=persona.position,
+                         altura=persona.ground_y)
+
+    def evolve(self):
+        self.evolution.pop(0)
+        self.radius = self.evolution[0]
+        if self.radius == 0:
+            self.destroy()
+            return -1
+        return 0
+    
+    def destroy(self):
+        self.ring.destroy()
+
+    def render(self, light_pos):
+        self.ring.render(light_pos)
+
+    def update(self):
+        self.evolve()
+        self.ring.update()
