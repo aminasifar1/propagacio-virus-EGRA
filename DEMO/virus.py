@@ -9,7 +9,14 @@ import random
 from ring import Ring
 from person import Person
 
+import random
+import glm
+
 class Virus:
+    """
+    Comprova col·lisions per transferir infecció.
+    """
+
     def __init__(self,app,td,tt,ip,r, infection_distance,evolve = 0):
         #self.puff_system = app.puff_system
         self.tick_duration = td
@@ -19,7 +26,7 @@ class Virus:
         self.infection_distance = infection_distance
         self.evolve = evolve
         self.rastros = []
-    
+
     def update(self,td,tt,ip,r):
         self.tick_duration = td
         self.tick_timer = tt 
@@ -31,10 +38,47 @@ class Virus:
         if not person.ring:
             person.infectar(self.infection_distance)
         print("Una persona s'ha infectat!")
-        puff_position = person.position + glm.vec3(0, 1.0, 0)
+        #puff_position = person.position + glm.vec3(0, 1.0, 0)
         #self.puff_system.create_puff(puff_position, num_particles=12)
 
-    
+    # -------------------------------------------------------
+    # COMPROVACIÓ COL·LISIÓ RING - AABB
+    # -------------------------------------------------------
+    def ring_collides_aabb(self, ring, person):
+        """
+        Comprova si el bounding box (AABB) de la persona toca l'arc de la persona infectada.
+        """
+
+        # Coordenades del centre del ring
+        cx, cy, cz = ring.position.x, ring.position.y, ring.position.z
+        radius = ring.contagion_radius
+        ring_bottom = ring.position.y
+        ring_top = ring.position.y + ring.altura  # altura real del ring
+
+        # Bounding box de la persona
+        px, py, pz = person.position.x, person.position.y, person.position.z
+        hx, hy, hz = person.bb_half.x, person.bb_half.y, person.bb_half.z
+
+        # AABB Min / Max
+        box_min = glm.vec3(px - hx, py, pz - hz)
+        box_max = glm.vec3(px + hx, py + hy*2, pz + hz)
+
+        # Distància mínima entre el cilindre i l'AABB projectada a XZ
+        dx = max(box_min.x - cx, 0, cx - box_max.x)
+        dz = max(box_min.z - cz, 0, cz - box_max.z)
+
+        # Comprovació vertical
+        dy = 0
+        if ring_top < box_min.y:
+            dy = box_min.y - ring_top
+        elif ring_bottom > box_max.y:
+            dy = ring_bottom - box_max.y
+
+        # Col·lisió si distància horitzontal és <= radi i vertical està alineat
+        return (dx*dx + dz*dz <= radius*radius) and (dy == 0)
+
+    # -------------------------------------------------------
+    # CHECK INFECTIONS
     def check_infections(self,mundo):
         """Comprova col·lisions per transferir infecció."""
 
@@ -55,14 +99,13 @@ class Virus:
         
         for infected in infected_people:
             infection_radius = infected.ring.contagion_radius
-            nuevo = Rastro(infection_radius,infected,
+            """nuevo = Rastro(infection_radius,infected,
                            self.infection_probability,
                            evolution_rate = 10)
-            self.rastros.append(nuevo)
+            self.rastros.append(nuevo)"""
 
         if not uninfected_people:
-            return
-        
+            return 
 
         for infected in infected_people:
             infection_radius = infected.ring.contagion_radius
@@ -83,14 +126,14 @@ class Virus:
                 if dist < rastro.radius:
                     if random.random() < rastro.infection_rate:
                         self.infectar(uninfected)
-                        uninfected_people.remove(uninfected)
-        
+                        uninfected_people.remove(uninfected)    
 
     def render(self,light_pos):
         for rastro in self.rastros:
             a = rastro.render(light_pos)
 
-class Rastro:
+
+"""class Rastro:
     def __init__(self,rad,persona: Person ,infection_rate : float,evolution_rate : int):
         self.radius = rad
         self.infection_rate = infection_rate
@@ -117,4 +160,4 @@ class Rastro:
 
     def update(self):
         self.evolve()
-        self.ring.update()
+        self.ring.update()"""

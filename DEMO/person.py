@@ -57,6 +57,66 @@ class Person:
         self.objetivo_asiento = None     # id del asiento hacia el que se dirige
         self.destino_sala = None         # sala a la que se está moviendo
 
+        # ----------------------------
+        # BOUNDING BOX (AABB) - VISUAL
+        # ----------------------------
+        # Definim mitja-extensió del cub (half extents)   # <-- canvi
+        self.bb_half = glm.vec3(0.25, self.height, 0.25)   # <-- canvi
+
+        # Creem un shader senzill per dibuixar línies (wireframe box).  # <-- canvi
+        # Aquest shader té uniform m_model, m_view, m_proj i un color.  # <-- canvi
+        self.shader_lines = self.ctx.program(                 # <-- canvi
+            vertex_shader='''
+                #version 330
+                in vec3 in_pos;
+                uniform mat4 m_model;
+                uniform mat4 m_view;
+                uniform mat4 m_proj;
+                void main() {
+                    gl_Position = m_proj * m_view * m_model * vec4(in_pos, 1.0);
+                }
+            ''',
+            fragment_shader='''
+                #version 330
+                uniform vec3 u_color;
+                out vec4 f_color;
+                void main() {
+                    f_color = vec4(u_color, 1.0);
+                }
+            '''
+        )                                                   # <-- canvi
+
+        # Construïm el VBO de posicions (wireframe box: 12 segments -> 24 vertex)  # <-- canvi
+        # Les coordenades es defineixen en espai local (centrat a l'origen) i després
+        # aplicarem la transformació de model amb la posició de la persona.  # <-- canvi
+        hx = self.bb_half.x                                   # <-- canvi
+        hy = self.bb_half.y                                   # <-- canvi
+        hz = self.bb_half.z                                   # <-- canvi
+
+        # Coordenades dels vertices (pares per a línies)
+        bb_verts = np.array([
+            # base (square)
+            -hx, 0.0, -hz,   hx, 0.0, -hz,
+            hx, 0.0, -hz,    hx, 0.0, hz,
+            hx, 0.0, hz,     -hx, 0.0, hz,
+            -hx, 0.0, hz,    -hx, 0.0, -hz,
+            # top (square)
+            -hx, hy, -hz,   hx, hy, -hz,
+            hx, hy, -hz,    hx, hy, hz,
+            hx, hy, hz,     -hx, hy, hz,
+            -hx, hy, hz,    -hx, hy, -hz,
+            # vertical edges
+            -hx, 0.0, -hz,   -hx, hy, -hz,
+            hx, 0.0, -hz,    hx, hy, -hz,
+            hx, 0.0, hz,     hx, hy, hz,
+            -hx, 0.0, hz,    -hx, hy, hz,
+        ], dtype='f4')                                        # <-- canvi
+
+        # Créem buffer i VAO per al bounding box (wireframe)  # <-- canvi
+        self.bb_vbo = self.ctx.buffer(bb_verts.tobytes())    # <-- canvi
+        # L'atribut del vertex shader s'anomena "in_pos" al shader que hem creat  # <-- canvi
+        self.bb_vao = self.ctx.simple_vertex_array(self.shader_lines, self.bb_vbo, 'in_pos')  # <-- canvi
+
     # =========================================================
     # CONTAGION
     # =========================================================
@@ -314,3 +374,16 @@ class Person:
 
         if self.ring:
             self.ring.render(light_pos)
+
+        # ------------------------------
+        # DEBUG: Render del bounding box
+        # ------------------------------
+        # Escrivim les matrius i el color al shader de línies i dibuixem el VAO (wireframe).  # <-- canvi
+        self.shader_lines['m_model'].write(glm.translate(glm.mat4(1.0), self.position))  # <-- canvi
+        self.shader_lines['m_view'].write(self.camera.m_view)                            # <-- canvi
+        self.shader_lines['m_proj'].write(self.camera.m_proj)                            # <-- canvi
+        # Posem color verd transparència 1.0 per destacar (pots canviar).  # <-- canvi
+        self.shader_lines['u_color'].value = (0.0, 1.0, 0.0)                             # <-- canvi
+        # Amplada de línia per visibilitat (pot variar depenent del backend).  # <-- canvi
+        self.ctx.line_width = 2.0                                                       # <-- canvi
+        self.bb_vao.render(mode=mgl.LINES)                                             # <-- canvi
