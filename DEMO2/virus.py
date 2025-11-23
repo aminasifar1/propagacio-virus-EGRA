@@ -17,7 +17,7 @@ class Virus:
     Comprova col·lisions per transferir infecció.
     """
 
-    def __init__(self,app,td,tt,ip,r, infection_distance,evolve = 2):
+    def __init__(self,app,td,tt,ip,r, infection_distance,aire = 0.00006,disipar = 0.00005,evolve = 2):
         #self.puff_system = app.puff_system
         self.tick_duration = td
         self.tick_timer = tt 
@@ -26,6 +26,8 @@ class Virus:
         self.infection_distance = infection_distance
         self.evolve = evolve
         self.rastros = []
+        self.contagio_aire = aire
+        self.disipar = disipar
 
     def update(self,td,tt,ip,r):
         self.tick_duration = td
@@ -90,6 +92,11 @@ class Virus:
 
 
         for nombre in mundo:
+            # Disminuir el nivel de contagio por aire en la sala
+            mundo[nombre].contagio_aire -= self.disipar
+            if mundo[nombre].contagio_aire < 0.0:
+                mundo[nombre].contagio_aire = 0.0
+            
             infected_people = []
             uninfected_people = []
             for p in mundo[nombre].personas:
@@ -97,6 +104,12 @@ class Virus:
                     infected_people.append(p)
                 else:
                     uninfected_people.append(p)
+
+            # Incrementar el nivel de contagio por aire en la sala
+            if len(infected_people) > 0:
+                mundo[nombre].contagio_aire += self.contagio_aire * len(infected_people)
+                if mundo[nombre].contagio_aire > 1.0:
+                    mundo[nombre].contagio_aire = 1.0
         
             for infected in infected_people:
                 infection_radius = infected.ring.contagion_radius
@@ -104,6 +117,8 @@ class Virus:
                             self.infection_probability,
                             evolution_rate = self.evolve)
                 self.rastros.append(nuevo)
+            if nombre == "pasillo":
+                print("Prob contagio sala",nombre,":",mundo[nombre].contagio_aire)
 
             if not uninfected_people:
                 continue
@@ -118,6 +133,12 @@ class Virus:
                         if random.random() < self.infection_probability:
                             self.infectar(uninfected)
                             uninfected_people.remove(uninfected)
+            
+            for uninfected in uninfected_people:
+                if random.random() < mundo[nombre].contagio_aire:
+                    self.infectar(uninfected)
+                    uninfected_people.remove(uninfected)
+            
 
         for rastro in self.rastros:
             for uninfected in uninfected_people:
