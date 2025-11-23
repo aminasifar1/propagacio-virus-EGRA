@@ -17,7 +17,7 @@ class Virus:
     Comprova col·lisions per transferir infecció.
     """
 
-    def __init__(self,app,td,tt,ip,r, infection_distance,evolve = 0):
+    def __init__(self,app,td,tt,ip,r, infection_distance,evolve = 2):
         #self.puff_system = app.puff_system
         self.tick_duration = td
         self.tick_timer = tt 
@@ -88,35 +88,36 @@ class Virus:
                 self.rastros.remove(rastro)
                 rastro.destroy()
 
-        infected_people = []
-        uninfected_people = []
+
         for nombre in mundo:
+            infected_people = []
+            uninfected_people = []
             for p in mundo[nombre].personas:
                 if p.ring:
                     infected_people.append(p)
                 else:
                     uninfected_people.append(p)
         
-        for infected in infected_people:
-            infection_radius = infected.ring.contagion_radius
-            """nuevo = Rastro(infection_radius,infected,
-                           self.infection_probability,
-                           evolution_rate = 10)
-            self.rastros.append(nuevo)"""
+            for infected in infected_people:
+                infection_radius = infected.ring.contagion_radius
+                nuevo = Rastro(infection_radius,infected,
+                            self.infection_probability,
+                            evolution_rate = self.evolve)
+                self.rastros.append(nuevo)
 
-        if not uninfected_people:
-            return 
+            if not uninfected_people:
+                continue
 
-        for infected in infected_people:
-            infection_radius = infected.ring.contagion_radius
-            for uninfected in uninfected_people:
-                
-                dist = glm.length(infected.position - uninfected.position)
-                
-                if dist < infection_radius:
-                    if random.random() < self.infection_probability:
-                        self.infectar(uninfected)
-                        uninfected_people.remove(uninfected)
+            for infected in infected_people:
+                infection_radius = infected.ring.contagion_radius
+                for uninfected in uninfected_people:
+                    
+                    dist = glm.length(infected.position - uninfected.position)
+                    
+                    if dist < infection_radius:
+                        if random.random() < self.infection_probability:
+                            self.infectar(uninfected)
+                            uninfected_people.remove(uninfected)
 
         for rastro in self.rastros:
             for uninfected in uninfected_people:
@@ -133,12 +134,14 @@ class Virus:
             a = rastro.render(light_pos)
 
 
-"""class Rastro:
+class Rastro:
     def __init__(self,rad,persona: Person ,infection_rate : float,evolution_rate : int):
+        self.O_radius = rad
         self.radius = rad
         self.infection_rate = infection_rate
         self.position = persona.position
-        self.evolution = [self.radius-(self.radius/evolution_rate)*i for i in range(evolution_rate+1)]
+        # self.evolution = [self.radius-(self.radius/evolution_rate)*i for i in range(evolution_rate+1)]
+        self.evolution = [1-(1/evolution_rate)*i for i in range(evolution_rate+1)]
         self.ring = Ring(persona.ctx, persona.camera,
                          radius=self.radius, thickness=0.15, height=0.1,
                          position=persona.position,
@@ -146,7 +149,7 @@ class Virus:
 
     def evolve(self):
         self.evolution.pop(0)
-        self.radius = self.evolution[0]
+        self.radius = self.O_radius * self.evolution[0]
         if self.radius == 0:
             self.destroy()
             return -1
@@ -160,4 +163,4 @@ class Virus:
 
     def update(self):
         self.evolve()
-        self.ring.update()"""
+        self.ring.update()

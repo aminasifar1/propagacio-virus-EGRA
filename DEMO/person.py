@@ -354,6 +354,14 @@ class Person:
         m_model = glm.rotate(m_model, self.rotation_angle, glm.vec3(0, 1, 0))
         m_model = glm.scale(m_model, glm.vec3((1, self.height / 1.71, 1)))
         return m_model
+    
+    def destroy(self):
+        self.tri_vbo.release()
+        self.bb_vbo.release()
+        self.nrm_vbo.release()
+        self.line_vbo.release()
+        self.shader_lines.release()
+        self.bb_vao.release()
 
     def render(self, shader, vao_tri, vao_line, light_pos):
         """Renderiza la persona i el seu anell si existeix."""
