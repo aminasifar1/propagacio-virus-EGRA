@@ -7,7 +7,7 @@ class Marker:
         self.ctx = ctx
         self.camera = camera
         self.position = glm.vec3(0, 0, 0)
-        self.speed = 0.1  # velocidad de movimiento
+        self.speed = 0.05  # velocidad de movimiento
         self.size = 0.1   # tamaño del cubo marcador
 
         # Vertices de un cubo pequeño centrado en (0,0,0)
@@ -57,8 +57,9 @@ class Marker:
     def handle_input(self, keys):
         """Mover el marcador según las teclas presionadas."""
         # Detectar si Alt está presionado para aumentar velocidad
-        speed_multiplier = 5.0 if (keys[pg.K_LALT] or keys[pg.K_RALT]) else 1.0
-        current_speed = self.speed * speed_multiplier
+        # speed_multiplier = 5.0 if (keys[pg.K_LALT] or keys[pg.K_RALT]) else 1.0
+        # current_speed = self.speed * speed_multiplier
+        current_speed = self.speed
 
         if keys[pg.K_UP]:
             self.position.z -= current_speed
@@ -68,9 +69,9 @@ class Marker:
             self.position.x -= current_speed
         if keys[pg.K_RIGHT]:
             self.position.x += current_speed
-        if keys[pg.K_p]:
+        if keys[pg.K_x]:
             self.position.y += current_speed
-        if keys[pg.K_l]:
+        if keys[pg.K_z]:
             self.position.y -= current_speed
         if keys[pg.K_RETURN]:
             self.print_position()

@@ -181,7 +181,7 @@ def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(1280, 720)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1640, 1024)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
@@ -335,12 +335,15 @@ class MotorGrafico:
             if self.delta_time == 0: self.delta_time = 1e-6
             last_frame_time = current_frame_time
             keys = pg.key.get_pressed()
+            if (keys[pg.K_LALT] or keys[pg.K_RALT]):
+                self.marker.handle_input(keys)
 
             # ==========================
             # Gestió d'events
             # ==========================
             for e in pg.event.get():
-                self.marker.handle_input(keys)
+                if not keys[pg.K_LALT] and not keys[pg.K_RALT]:
+                    self.marker.handle_input(keys)
                 self.camera.handle_mouse(e)
                 if e.type == pg.QUIT or (e.type == pg.KEYDOWN and e.key == pg.K_ESCAPE):
                     pg.event.set_grab(False)
@@ -371,7 +374,7 @@ class MotorGrafico:
             # Actualitzar càmera
             self.camera.move(self.delta_time)
             self.camera.update_matrices()
-            self.ctx.clear(0.01, 0.04, 0.05, 1.0)
+            self.ctx.clear(0.01, 0.7, 0.8, 1.0)
 
             # ==========================
             # Spawn de persones
