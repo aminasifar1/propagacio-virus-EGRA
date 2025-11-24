@@ -110,7 +110,7 @@ class Virus:
 
             for infected in infected_people:
                 infection_radius = infected.ring.contagion_radius
-                for uninfected in uninfected_people:
+                for uninfected in uninfected_people[:]: # iteramos sobre una copia de la lista para poder modificar mientras iteramos
                     
                     dist = glm.length(infected.position - uninfected.position)
                     

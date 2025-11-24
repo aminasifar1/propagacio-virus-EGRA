@@ -18,71 +18,131 @@ from infectionbar import InfectionBar
 # =====================================================
 #                    CARREGAR OBJ
 # =====================================================
-def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3]]:
+def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3], str]:
     vertices = []
+    normals = []
+    texcoords = []
     faces = []
-    edges = set()
+    
+    # Diccionario de materiales: nombre -> (Color RGB, Ruta Textura)
+    materials = {}
+    current_material_name = None
+    
+    # Ruta base
+    base_dir = os.path.dirname(path)
+    texture_file = None # Guardaremos la primera textura que encontremos para pasarsela a Escenario
 
     try:
         with open(path, 'r') as f:
             for line in f:
-                if line.startswith('v '):
-                    _, x, y, z = line.strip().split()
-                    vertices.append((float(x), float(y), float(z)))
+                line = line.strip()
+                if not line: continue
+                
+                if line.startswith('mtllib '):
+                    # --- PARSEO DEL ARCHIVO MTL ---
+                    mtl_filename = line.split()[1]
+                    mtl_path = os.path.join(base_dir, mtl_filename)
+                    try:
+                        with open(mtl_path, 'r') as mtl_f:
+                            mat_name = None
+                            mat_color = (1.0, 1.0, 1.0) # Blanco por defecto
+                            mat_texture = None
+                            
+                            for m_line in mtl_f:
+                                m_line = m_line.strip()
+                                if m_line.startswith('newmtl '):
+                                    # Guardar material anterior si existe
+                                    if mat_name:
+                                        materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
+                                    # Empezar nuevo material
+                                    mat_name = m_line.split()[1]
+                                    mat_color = (1.0, 1.0, 1.0)
+                                    mat_texture = None
+                                    
+                                elif m_line.startswith('Kd '): # Color Difuso
+                                    parts = m_line.split()
+                                    mat_color = (float(parts[1]), float(parts[2]), float(parts[3]))
+                                    
+                                elif m_line.startswith('map_Kd '): # Textura
+                                    parts = m_line.split()
+                                    # A veces blender pone opciones antes del archivo, cogemos el ultimo
+                                    tex_name = parts[-1] 
+                                    mat_texture = os.path.join(base_dir, tex_name)
+                                    if not texture_file: texture_file = mat_texture
+
+                            # Guardar el último material del archivo
+                            if mat_name:
+                                materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
+                                
+                    except FileNotFoundError:
+                        print(f"Advertencia: No se encontró el archivo MTL: {mtl_path}")
+
+                elif line.startswith('usemtl '):
+                    # Cambiamos el material actual
+                    current_material_name = line.split()[1]
+
+                elif line.startswith('v '):
+                    parts = line.split()
+                    vertices.append((float(parts[1]), float(parts[2]), float(parts[3])))
+                elif line.startswith('vn '):
+                    parts = line.split()
+                    normals.append((float(parts[1]), float(parts[2]), float(parts[3])))
+                elif line.startswith('vt '):
+                    parts = line.split()
+                    texcoords.append((float(parts[1]), float(parts[2])))
                 elif line.startswith('f '):
-                    parts = line.strip().split()[1:]
-                    face_indices = [int(p.split('/')[0]) - 1 for p in parts]
-                    # Triangles i edges
-                    for i in range(1, len(face_indices) - 1):
-                        faces.append((face_indices[0], face_indices[i], face_indices[i + 1]))
-                    for i in range(len(face_indices)):
-                        p1 = face_indices[i]
-                        p2 = face_indices[(i + 1) % len(face_indices)]
-                        edges.add(tuple(sorted((p1, p2))))
+                    parts = line.split()[1:]
+                    face_verts = []
+                    for p in parts:
+                        vals = p.split('/')
+                        v_idx = int(vals[0]) - 1
+                        vt_idx = int(vals[1]) - 1 if len(vals) > 1 and vals[1] else -1
+                        vn_idx = int(vals[2]) - 1 if len(vals) > 2 and vals[2] else -1
+                        face_verts.append((v_idx, vt_idx, vn_idx))
+                    
+                    # Triangulación fan y asignar material actual a la cara
+                    for i in range(1, len(face_verts) - 1):
+                        faces.append({
+                            'verts': (face_verts[0], face_verts[i], face_verts[i + 1]),
+                            'material': current_material_name
+                        })
+
     except FileNotFoundError:
-        print(f"Error: El fitxer '{path}' no s'ha trobat.")
-        raise
-    except Exception as e:
-        print(f"Error processant el fitxer '{path}': {e}")
+        print(f"Error: El fichero '{path}' no existe.")
         raise
 
     if not vertices:
-        return np.array([]), np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0))
+        return np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0)), None
 
-    np_vertices = np.array(vertices, dtype='f4')
-    min_coords = np.min(np_vertices, axis=0)
-    max_coords = np.max(np_vertices, axis=0)
+    # --- Construcción del Buffer (Pos + Normal + UV + COLOR) ---
+    vertex_data = []
+    
+    np_verts = np.array(vertices, dtype='f4')
+    min_coords = np.min(np_verts, axis=0)
+    max_coords = np.max(np_verts, axis=0)
     bounding_box = (glm.vec3(min_coords), glm.vec3(max_coords))
 
-    # Normals per vertex
-    vertex_normals = [np.zeros(3) for _ in range(len(vertices))]
     for face in faces:
-        v0, v1, v2 = (np.array(vertices[i]) for i in face)
-        face_normal = np.cross(v1 - v0, v2 - v0)
-        for vertex_index in face:
-            vertex_normals[vertex_index] += face_normal
-    vertex_normals = [v / np.linalg.norm(v) if np.linalg.norm(v) > 0 else np.array([0, 1, 0]) for v in vertex_normals]
+        mat_name = face['material']
+        # Obtener color del material (o blanco si falla)
+        color = (1.0, 1.0, 1.0)
+        if mat_name in materials:
+            color = materials[mat_name]['color']
+        
+        for v_idx, vt_idx, vn_idx in face['verts']:
+            # 1. Posición (3f)
+            vertex_data.extend(vertices[v_idx])
+            # 2. Normal (3f)
+            if vn_idx >= 0: vertex_data.extend(normals[vn_idx])
+            else: vertex_data.extend([0, 1, 0])
+            # 3. UV (2f)
+            if vt_idx >= 0: vertex_data.extend(texcoords[vt_idx])
+            else: vertex_data.extend([0.0, 0.0])
+            # 4. COLOR (3f) - ¡NUEVO!
+            vertex_data.extend(color)
 
-    # Dades per render de triangles
-    tri_vertices_data = []
-    normals_data = []
-    for face in faces:
-        for vertex_index in face:
-            tri_vertices_data.extend(vertices[vertex_index])
-            normals_data.extend(vertex_normals[vertex_index])
-
-    # Dades per render de línies
-    line_vertices_data = []
-    for edge in edges:
-        line_vertices_data.extend(vertices[edge[0]])
-        line_vertices_data.extend(vertices[edge[1]])
-
-    return (
-        np.array(tri_vertices_data, dtype='f4'),
-        np.array(normals_data, dtype='f4'),
-        np.array(line_vertices_data, dtype='f4'),
-        bounding_box
-    )
+    buffer_data = np.array(vertex_data, dtype='f4')
+    return buffer_data, bounding_box, texture_file
 
 # =====================================================
 #                    MOTOR GRÀFIC
@@ -120,19 +180,22 @@ class MotorGrafico:
         self.frame_count = 0
         self.fps = 0
 
+        self.show_bboxes = False
+
         # Virus
         self.tick_duration = 0.2
         self.tick_timer = 0.0
+        self.tick_global = 0  # --- Contador global de ticks ---
         self.infection_probability = 0.2
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
 
         # Escenari
-        tri_data, normals, line_data, bounding_box = load_obj(scene_path)
-        self.object = Escenario(self.ctx, self.camera, tri_data, normals, line_data, bounding_box)
+        scene_data, bounding_box, texture_file = load_obj(scene_path)
+        self.object = Escenario(self.ctx, self.camera, scene_data, bounding_box, texture_file)
         self.object.app = self
 
         # Persones
-        self.p_tri_data, self.p_normals, self.p_line_data, bounding_box = load_obj(person_path)
+        self.p_data, p_bbox, self.p_tex_path = load_obj(person_path)
         self.people = []
         self.simulando = False
         self.tiempo_persona = 0.0
@@ -140,16 +203,25 @@ class MotorGrafico:
         self.max_people = 50
 
         # Creem la primera persona només per obtenir el VAO
-        first_person = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
-        self.person_vao_tri = self.ctx.vertex_array(self.object.shader, [(first_person.tri_vbo, '3f', 'in_position'), (first_person.nrm_vbo, '3f', 'in_normal')])
-        self.person_vao_line = self.ctx.vertex_array(self.object.shader, [(first_person.line_vbo, '3f', 'in_position')])
+        # first_person = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
+        first_person = Person(self.ctx, self.camera, self.p_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
+        first_person.infection_tick = None  # --- Manté el tick d’infecció ---
+        # self.person_vao_tri = self.ctx.vertex_array(self.object.shader, [(first_person.tri_vbo, '3f', 'in_position'), (first_person.nrm_vbo, '3f', 'in_normal')])
+        # self.person_vao_line = self.ctx.vertex_array(self.object.shader, [(first_person.line_vbo, '3f', 'in_position')])
+        self.person_vao_tri = self.ctx.vertex_array(
+            self.object.shader, 
+            [(first_person.vbo, '3f 3f 2f 3f', 'in_position', 'in_normal', 'in_texcoord', 'in_color')]
+        )
+        self.person_vao_line = None
 
         min_coords, max_coords = self.object.bounding_box
         print(f"Escenari carregat. Bounding Box: MIN {min_coords}, MAX {max_coords}")
 
     # Crear persona
     def create_person(self, schedule=[], spawn='pasillo'):
-        persona = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
+        # persona = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
+        persona = Person(self.ctx, self.camera, self.p_data, self.mundo, schedule, spawn)
+        persona.infection_tick = None  # --- Manté el tick d’infecció ---
         self.people.append(persona)
         return persona
 
@@ -209,17 +281,17 @@ class MotorGrafico:
         print("[MOTOR] Iniciando ciclo principal...")
         last_frame_time = time.time()
 
-        # ==========================
-        # Funció de col·lisió AABB
-        # ==========================
-        def aabb_collision(pos1, bb1_half, pos2, bb2_half):
-            """
-            Retorna True si hi ha intersecció entre dos AABB centrats a pos1 i pos2.
-            bb_half: semi-dimensions del bounding box.
-            """
-            return (abs(pos1.x - pos2.x) <= (bb1_half.x + bb2_half.x) and
-                    abs(pos1.y - pos2.y) <= (bb1_half.y + bb2_half.y) and
-                    abs(pos1.z - pos2.z) <= (bb1_half.z + bb2_half.z))
+        # # ==========================
+        # # Funció de col·lisió AABB
+        # # ==========================
+        # def aabb_collision(pos1, bb1_half, pos2, bb2_half):
+        #     """
+        #     Retorna True si hi ha intersecció entre dos AABB centrats a pos1 i pos2.
+        #     bb_half: semi-dimensions del bounding box.
+        #     """
+        #     return (abs(pos1.x - pos2.x) <= (bb1_half.x + bb2_half.x) and
+        #             abs(pos1.y - pos2.y) <= (bb1_half.y + bb2_half.y) and
+        #             abs(pos1.z - pos2.z) <= (bb1_half.z + bb2_half.z))
 
         while True:
             dt = self.clock.tick(60)/1000.0
@@ -243,6 +315,9 @@ class MotorGrafico:
                     if e.key == pg.K_p:
                         self.simulando = not self.simulando
                         print("▶️ Simulación:", "Iniciada" if self.simulando else "Pausada")
+                    elif e.key == pg.K_b:
+                        self.show_bboxes = not self.show_bboxes
+                        print(f"Mostrar bounding boxes: {self.show_bboxes}")
                     elif e.key == pg.K_r:
                         self.people.clear()
                         self.tiempo_persona = 0.0
@@ -251,7 +326,7 @@ class MotorGrafico:
             # Actualitzar càmera
             self.camera.move(self.delta_time)
             self.camera.update_matrices()
-            self.ctx.clear(0.07,0.07,0.09)
+            self.ctx.clear(0.2, 0.2, 0.2)
 
             # ==========================
             # Spawn de persones
@@ -270,6 +345,7 @@ class MotorGrafico:
                 self.tick_timer += self.delta_time
                 if self.tick_timer >= self.tick_duration:
                     self.tick_timer -= self.tick_duration
+                    self.tick_global += 1  # --- Incrementa tick global
                     self.virus.check_infections(self.mundo)
 
             # ==========================
@@ -285,28 +361,29 @@ class MotorGrafico:
             # ==========================
             for p in self.people:
                 if self.simulando:
-                    old_pos = glm.vec3(p.position)  # guardem posició antiga
+                    # old_pos = glm.vec3(p.position)  # guardem posició antiga
                     p.update(self.delta_time)
-                    # Comprovem col·lisions amb altres persones
-                    for other in self.people:
-                        if other is p: continue
-                        if aabb_collision(p.position, p.bb_half, other.position, other.bb_half):
-                            # Revertim posició si hi ha col·lisió
-                            p.position = old_pos
-                            p.m_model = glm.translate(glm.mat4(1.0), old_pos)
-                            break
+                    # # Comprovem col·lisions amb altres persones
+                    # for other in self.people:
+                    #     if other is p: continue
+                    #     if aabb_collision(p.position, p.bb_half, other.position, other.bb_half):
+                    #         # Revertim posició si hi ha col·lisió
+                    #         p.position = old_pos
+                    #         p.m_model = glm.translate(glm.mat4(1.0), old_pos)
+                    #         break
                 # Render de la persona
+                # p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
                 p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
 
             # ==========================
             # Render UI
             # ==========================
             self.ui_surface.fill((0,0,0,0))
-            num_infected = sum(1 for p in self.people if hasattr(p,'ring') and p.ring is not None)
+            # num_infected = sum(1 for p in self.people if hasattr(p,'ring') and p.ring is not None)
             total_people = len(self.people)
-            if total_people>0:
+            if total_people > 0:
                 pass
-                #self.infection_bar.render(self.ui_surface, num_infected, total_people)
+                # self.infection_bar.render(self.ui_surface, num_infected, total_people)
             self._render_ui_overlay()
     
             # ==========================
@@ -326,9 +403,10 @@ class MotorGrafico:
 # =====================================================
 if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
-    DATA_PATH = os.path.join(ROOT_PATH,"DEMO","data","salas")
-    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO","Models","OBJ.obj")
-    PERSON_PATH = os.path.join(ROOT_PATH,"DEMO","Models","person.obj")
+    DATA_PATH = os.path.join(ROOT_PATH,"DEMO2","data","salas")
+    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","person.obj")
+    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni.mtl")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================

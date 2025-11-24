@@ -14,7 +14,7 @@ from animacion import PuffSystem
 
 
 class Person:
-    def __init__(self, ctx, camera, tri_data, normals, line_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, position=None):
+    def __init__(self, ctx, camera, vertex_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, position=None):
         """
         Crea una persona que camina siguiendo waypoints.
         ground_y: Altura del suelo donde deben caminar las personas
@@ -22,9 +22,10 @@ class Person:
         """
         self.ctx = ctx
         self.camera = camera
-        self.tri_vbo = self.ctx.buffer(tri_data)
-        self.nrm_vbo = self.ctx.buffer(normals)
-        self.line_vbo = self.ctx.buffer(line_data)
+
+        # --- CAMBIO IMPORTANTE: Un solo VBO ---
+        self.vbo = self.ctx.buffer(vertex_data)
+
         self.mundo = facultad
         self.schedule = schedule
         self.present = True
@@ -380,21 +381,27 @@ class Person:
         shader['m_view'].write(self.camera.m_view)
 
         vao_tri.render(mode=mgl.TRIANGLES)
-        self.ctx.line_width = 1.0
-        vao_line.render(mode=mgl.LINES)
+        # self.ctx.line_width = 1.0
+        # vao_line.render(mode=mgl.LINES)
 
         if self.ring:
             self.ring.render(light_pos)
 
         # ------------------------------
-        # DEBUG: Render del bounding box
+        # DEBUG: Render del bounding box (solo si está activado en la app)
         # ------------------------------
-        # Escrivim les matrius i el color al shader de línies i dibuixem el VAO (wireframe).  # <-- canvi
-        self.shader_lines['m_model'].write(glm.translate(glm.mat4(1.0), self.position))  # <-- canvi
-        self.shader_lines['m_view'].write(self.camera.m_view)                            # <-- canvi
-        self.shader_lines['m_proj'].write(self.camera.m_proj)                            # <-- canvi
-        # Posem color verd transparència 1.0 per destacar (pots canviar).  # <-- canvi
-        self.shader_lines['u_color'].value = (0.0, 1.0, 0.0)                             # <-- canvi
-        # Amplada de línia per visibilitat (pot variar depenent del backend).  # <-- canvi
-        self.ctx.line_width = 2.0                                                       # <-- canvi
-        self.bb_vao.render(mode=mgl.LINES)                                             # <-- canvi
+        try:
+            show_bb = bool(self.camera.app.show_bboxes)
+        except Exception:
+            show_bb = False
+
+        if show_bb:
+            # Escrivim les matrius i el color al shader de línies i dibuixem el VAO (wireframe).
+            self.shader_lines['m_model'].write(glm.translate(glm.mat4(1.0), self.position))
+            self.shader_lines['m_view'].write(self.camera.m_view)
+            self.shader_lines['m_proj'].write(self.camera.m_proj)
+            # Posem color verd per destacar (pot canviar)
+            self.shader_lines['u_color'].value = (0.0, 1.0, 0.0)
+            # Amplada de línia per visibilitat
+            self.ctx.line_width = 2.0
+            self.bb_vao.render(mode=mgl.LINES)                                             # <-- canvi
