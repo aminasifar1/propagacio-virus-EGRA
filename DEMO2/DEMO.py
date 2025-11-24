@@ -18,7 +18,7 @@ from infectionbar import InfectionBar
 # =====================================================
 #                    CARREGAR OBJ
 # =====================================================
-def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3], str]:
+def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3], str]:
     vertices = []
     normals = []
     texcoords = []
@@ -45,7 +45,7 @@ def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec
                     try:
                         with open(mtl_path, 'r') as mtl_f:
                             mat_name = None
-                            mat_color = (1.0, 1.0, 1.0) # Blanco por defecto
+                            mat_color = default_color
                             mat_texture = None
                             
                             for m_line in mtl_f:
@@ -56,7 +56,7 @@ def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec
                                         materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
                                     # Empezar nuevo material
                                     mat_name = m_line.split()[1]
-                                    mat_color = (1.0, 1.0, 1.0)
+                                    mat_color = default_color
                                     mat_texture = None
                                     
                                 elif m_line.startswith('Kd '): # Color Difuso
@@ -229,7 +229,16 @@ class MotorGrafico:
         self.object.app = self
 
         # Persones
-        self.p_data, p_bbox, self.p_tex_path = load_obj(person_path)
+        self.person_shader = Person.get_shader(self.ctx)
+        self.p_data, p_bbox, self.p_tex_path = load_obj(person_path, default_color=(0.6, 0.6, 0.7))
+        self.person_texture = None
+        if self.p_tex_path:
+            try:
+                img = pg.image.load(self.p_tex_path).convert()
+                img = pg.transform.flip(img, False, True)
+                self.person_texture = self.ctx.texture(img.get_size(), 3, pg.image.tostring(img, 'RGB'))
+                self.person_texture.build_mipmaps()
+            except Exception as e: print(e)
         self.people = []
         self.simulando = False
         self.tiempo_persona = 0.0
@@ -237,14 +246,13 @@ class MotorGrafico:
         self.max_people = 50
 
         # Creem la primera persona només per obtenir el VAO
-        # first_person = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
-        first_person = Person(self, self.ctx, self.camera, self.p_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
-        first_person.infection_tick = None  # --- Manté el tick d’infecció ---
-        # self.person_vao_tri = self.ctx.vertex_array(self.object.shader, [(first_person.tri_vbo, '3f', 'in_position'), (first_person.nrm_vbo, '3f', 'in_normal')])
-        # self.person_vao_line = self.ctx.vertex_array(self.object.shader, [(first_person.line_vbo, '3f', 'in_position')])
+        # first_person = Person(self, self.ctx, self.camera, self.p_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
+        self.person_vbo = self.ctx.buffer(self.p_data)
+
+        # Usamos el shader compilado
         self.person_vao_tri = self.ctx.vertex_array(
-            self.object.shader, 
-            [(first_person.vbo, '3f 3f 2f 3f 3f', 'in_position', 'in_normal', 'in_texcoord', 'in_color', 'in_smooth_normal')]
+            self.person_shader, 
+            [(self.person_vbo, '3f 12x 2f 3f 3f', 'in_position', 'in_texcoord', 'in_color', 'in_smooth_normal')]
         )
         self.person_vao_line = None
 
@@ -374,7 +382,7 @@ class MotorGrafico:
             # Actualitzar càmera
             self.camera.move(self.delta_time)
             self.camera.update_matrices()
-            self.ctx.clear(0.01, 0.7, 0.8, 1.0)
+            self.ctx.clear(0.01, 0.8, 0.9, 1.0)
 
             # ==========================
             # Spawn de persones
@@ -421,7 +429,7 @@ class MotorGrafico:
                     #         break
                 # Render de la persona
                 # p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
-                p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
+                p.render(self.person_shader, self.person_vao_tri, self.person_vao_line, light_pos, self.person_texture)
 
             # ==========================
             # Render UI

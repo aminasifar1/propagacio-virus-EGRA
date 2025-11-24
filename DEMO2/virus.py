@@ -152,7 +152,8 @@ class Virus:
 
     def render(self,light_pos):
         for rastro in self.rastros:
-            a = rastro.render(light_pos)
+            # a = rastro.render(light_pos)
+            pass
 
 
 class Rastro:
