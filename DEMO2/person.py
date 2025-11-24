@@ -90,8 +90,101 @@ class Person:
         self.bb_vbo = self.ctx.buffer(bb_verts.tobytes())
         self.bb_vao = self.ctx.simple_vertex_array(self.shader_lines, self.bb_vbo, 'in_pos')
 
-    # ... (Métodos infectar, camino, paso, actualizar_movimiento, _definir_camino..., _waypoint..., _terminar..., _cambiar... igual que antes) ...
-    # REPETIMOS LOS MÉTODOS DE LÓGICA PARA QUE EL FICHERO SEA COMPLETO
+    # --- DEFINICIÓN DEL SHADER (Método Estático) ---
+    # Definido aquí para mayor coherencia. DEMO.py lo llamará una vez.
+    @staticmethod
+    def get_shader(ctx):
+        return ctx.program(
+            vertex_shader='''
+                #version 330
+                in vec3 in_position;
+                // in vec3 in_normal;
+                in vec2 in_texcoord;
+                in vec3 in_color;
+                in vec3 in_smooth_normal; // Normal suave
+                
+                uniform mat4 m_proj;
+                uniform mat4 m_view;
+                uniform mat4 m_model;
+                uniform float outline_width;
+                
+                out vec3 v_normal;
+                out vec3 v_frag_pos;
+                out vec2 v_uv;
+                out vec3 v_color;
+                
+                void main() {
+                    vec3 pos = in_position;
+                    if (outline_width > 0.0) {
+                        pos += in_smooth_normal * outline_width;
+                    }
+                    vec4 world_pos = m_model * vec4(pos, 1.0);
+                    v_frag_pos = world_pos.xyz;
+                    
+                    mat3 normal_matrix = mat3(transpose(inverse(m_model)));
+                    
+                    // TRUCO: Usamos la normal SUAVE para la iluminación.
+                    v_normal = normalize(normal_matrix * in_smooth_normal);
+                    
+                    v_uv = in_texcoord;
+                    v_color = in_color;
+                    gl_Position = m_proj * m_view * world_pos;
+                }
+            ''',
+            fragment_shader='''
+                #version 330
+                in vec3 v_normal;
+                in vec3 v_frag_pos;
+                in vec2 v_uv;
+                in vec3 v_color;
+                
+                uniform vec3 light_pos;
+                uniform vec3 view_pos;
+                uniform sampler2D u_texture;
+                uniform float outline_width;
+                
+                out vec4 fragColor;
+                
+                void main() {
+                    if (outline_width > 0.0) {
+                        fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                        return;
+                    }
+
+                    // --- TOON SHADING ---
+                    vec4 texColor = texture(u_texture, v_uv);
+                    vec3 baseColor = texColor.rgb * v_color;
+
+                    vec3 norm = normalize(v_normal);
+                    vec3 light_dir = normalize(light_pos - v_frag_pos);
+                    vec3 view_dir = normalize(view_pos - v_frag_pos);
+
+                    float intensity = max(dot(norm, light_dir), 0.05);
+                    intensity = pow(intensity, 0.7); // Curva suave
+
+                    float light_level;
+                    if      (intensity > 0.95) light_level = 1.0;
+                    else if (intensity > 0.85) light_level = 0.9;
+                    else if (intensity > 0.70) light_level = 0.75;
+                    else if (intensity > 0.55) light_level = 0.6;
+                    else if (intensity > 0.40) light_level = 0.45;
+                    else if (intensity > 0.25) light_level = 0.30;
+                    else if (intensity > 0.10) light_level = 0.20;
+                    else                       light_level = 0.10;
+
+                    vec3 halfwayDir = normalize(light_dir + view_dir);
+                    float NdotH = max(dot(norm, halfwayDir), 0.0);
+                    float spec = (pow(NdotH, 64.0) > 0.9) ? 0.3 : 0.0;
+
+                    vec3 result = baseColor * light_level + vec3(spec);
+                    result = pow(result, vec3(1.0 / 2.2));
+
+                    fragColor = vec4(result, 1.0);
+                }
+            '''
+        )
+
+    # ... (Resto de métodos de lógica de movimiento igual que antes) ...
     
     def infectar(self, distance):
         self.ring = Ring(self.ctx, self.camera, radius=distance, thickness=0.15, height=0.1, position=self.position, altura=self.ground_y)
@@ -226,10 +319,6 @@ class Person:
              self.motor.object.texture.use(location=0)
              shader['u_texture'].value = 0
 
-        # --- ACTIVAR ILUMINACIÓN SUAVE ---
-        if 'use_smooth_lighting' in shader:
-            shader['use_smooth_lighting'].value = 1.0
-
         self.ctx.enable(mgl.CULL_FACE)
 
         # Pasada 1: Contorno
@@ -243,10 +332,6 @@ class Person:
         if 'outline_width' in shader:
             shader['outline_width'].value = 0.0
         vao_tri.render(mode=mgl.TRIANGLES)
-
-        # Limpieza (opcional, por seguridad)
-        if 'use_smooth_lighting' in shader:
-            shader['use_smooth_lighting'].value = 0.0
 
         if self.ring: self.ring.render(light_pos)
 

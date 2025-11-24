@@ -8,7 +8,7 @@ import random
 class Ring:
     """Anell amb volum, Toon Shading i Outline (Cel Shading)."""
 
-    def __init__(self, ctx, camera, radius=0.9, thickness=0.15, height=0.1, segments=16, color=(1.0, 0.2, 0.2),
+    def __init__(self, ctx, camera, radius=0.9, thickness=0.15, height=0.1, segments=24, color=(1.0, 0.2, 0.2),
                  position=glm.vec3(0, 0, 0), altura= 1):
         self.ctx = ctx
         self.camera = camera

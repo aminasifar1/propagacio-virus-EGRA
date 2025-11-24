@@ -114,36 +114,39 @@ class Escenario:
                         return;
                     }
 
-                    // --- PASADA 2: TOON SHADING ---
-                    
+                    // 1. Obtener color base (Textura * Color Material)
                     vec4 texColor = texture(u_texture, v_uv);
                     vec3 baseColor = texColor.rgb * v_color;
 
+                    // 2. Configuración de iluminación (Ajustado para parecerse más a Blender)
                     vec3 norm = normalize(v_normal);
                     vec3 light_dir = normalize(light_pos - v_frag_pos);
                     vec3 view_dir = normalize(view_pos - v_frag_pos);
 
-                    // 1. Intensidad Base
-                    float intensity = max(dot(norm, light_dir), 0.05);
-                    intensity = pow(intensity, 0.7); // No lineal
+                    // --- Ambient ---
+                    // Subimos un poco el ambient para que las sombras no sean negras puras
+                    // Blender usa iluminación ambiental global, aquí simulamos con 0.5
+                    vec3 ambient = 0.5 * baseColor;
+                    
+                    // --- Diffuse ---
+                    float diff = max(dot(norm, light_dir), 0.0);
+                    vec3 diffuse = diff * baseColor * 0.6; // Bajamos difusa para no quemar
+                    
+                    // --- Specular ---
+                    // El "brillo" del plástico/madera
+                    vec3 reflect_dir = reflect(-light_dir, norm);
+                    // Blinn-Phong es mejor que Phong (usamos halfwayDir) para brillos más naturales
+                    vec3 halfwayDir = normalize(light_dir + view_dir);  
+                    float spec = pow(max(dot(norm, halfwayDir), 0.0), 32.0);
+                    vec3 specular = spec * vec3(0.2); // Especular suave
 
-                    float light_level;
+                    vec3 result = ambient + diffuse + specular;
 
-                    // 2. Escalera de Niveles
-                    if (intensity > 0.95)      light_level = 1.0;
-                    else if (intensity > 0.7)  light_level = 0.8;
-                    else if (intensity > 0.3)  light_level = 0.6;
-                    else if (intensity > 0.1)  light_level = 0.3;
-                    else                       light_level = 0.1; // Sombra oscura
-
-                    // 3. Especular Toon
-                    vec3 halfwayDir = normalize(light_dir + view_dir);
-                    float NdotH = max(dot(norm, halfwayDir), 0.0);
-                    float spec = (pow(NdotH, 64.0) > 0.9) ? 0.4 : 0.0;
-
-                    // 4. Combinar
-                    vec3 result = baseColor * light_level + vec3(spec);
-                    result = pow(result, vec3(1.0 / 2.2));
+                    // --- 3. CORRECCIÓN GAMMA (CRUCIAL) ---
+                    // Los monitores esperan sRGB. Convertimos de Lineal a sRGB.
+                    // Esto "aclara" los tonos medios y hace que los colores "revivan".
+                    float gamma = 2.2;
+                    result = pow(result, vec3(1.0 / gamma));
 
                     fragColor = vec4(result, 1.0);
                 }
