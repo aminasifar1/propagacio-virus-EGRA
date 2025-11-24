@@ -311,16 +311,16 @@ def dibujar_grafo(pos, con, figsize=(12, 6)):
 # =====================================================================
 if __name__ == "__main__":
     builder = GraphBuilder(
-        punto_izq=(35.30,0.9,-26.50),   # CAMBIAR
-        punto_med=(35.30,0.9,-21.55),   # CAMBIAR
-        punto_der=(35.30,0.9,-17.50),   # CAMBIAR
-        punto_fila_4=(34.15,0.9,-25.25),    # CAMBIAR
-        punto_fila_3=(34.15,0.9,-20.625),   # CAMBIAR
+        punto_izq=(58.05,1.60,-53.75),   # CAMBIAR
+        punto_med=(58.05,1.60,-48.90),   # CAMBIAR
+        punto_der=(58.05,1.60,-44.95),   # CAMBIAR
+        punto_fila_4=(56.85,1.60,-52.65),    # CAMBIAR
+        punto_fila_3=(56.85,1.60,-48.05),   # CAMBIAR
         dist_columnas=0.725,   
         dist_filas=-1.044,     
-        n_filas=10, # CAMBIAR
-        pasillo=4,  # CAMBIAR
-        clase=1,    # CAMBIAR
+        n_filas=3, # CAMBIAR
+        pasillo=2,  # CAMBIAR
+        clase=6,    # CAMBIAR
         piso=0,
     )
 
@@ -332,8 +332,7 @@ if __name__ == "__main__":
     builder.generar_filas()
 
     builder.agregar_puertas([   # CAMBIAR
-        (28.30,0.9,-16.70),
-        (35.85,0.9,-16.70)
+        (58.30,1.60,-44.20)
     ])
     builder.conectar_puertas(builder.col_der_ids)
 
@@ -342,7 +341,7 @@ if __name__ == "__main__":
     dibujar_grafo(data["pos"], data["con"])
 
     # Guardar JSON
-    with open("DEMO2/data/salas/Q4-0003.json", "w") as f:   # CAMBIAR
+    with open("DEMO2/data/salas/Q2-0015.json", "w") as f:   # CAMBIAR
         json.dump(data, f, indent=4)
 
     print("Grafo generado en grafo_generado.json")
