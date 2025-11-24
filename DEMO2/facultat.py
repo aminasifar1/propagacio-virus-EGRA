@@ -42,6 +42,7 @@ class Sala:
         self.tipo = tipo
         self.waypoints: Dict[int, Waypoint] = {}
         self.personas = []
+        self.contagio_aire = 0.0
 
         # Si la sala tiene “puerta” (dos nodos especiales):
         # entrada = nodo fuera (en pasillo); salida = nodo dentro (en la sala)
