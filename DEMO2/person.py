@@ -14,7 +14,7 @@ from animacion import PuffSystem
 
 
 class Person:
-    def __init__(self, ctx, camera, vertex_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, position=None):
+    def __init__(self, motor, ctx, camera, vertex_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, position=None):
         """
         Crea una persona que camina siguiendo waypoints.
         ground_y: Altura del suelo donde deben caminar las personas
@@ -32,6 +32,7 @@ class Person:
         self.sala = None
         self.ring = None
         self.puff = PuffSystem(self.ctx, self.camera)
+        self.motor = motor
 
         # Personalizacion
         # self.height = min(np.random.normal(1.777, 0.1), 1.95)
@@ -177,7 +178,7 @@ class Person:
         """Inicia un movimiento con trayectoria de arco desde la posición actual hacia 'destino'."""
         self.en_movimiento = True
         self.t_inicio = pg.time.get_ticks()
-        self.duracion = duracion * 1000  # a milisegundos
+        self.duracion = duracion / self.motor.speed * 1000  # a milisegundos
         self.pos_inicial = glm.vec3(self.m_model[3].x, self.m_model[3].y, self.m_model[3].z)
         self.pos_final = glm.vec3(destino)
 
