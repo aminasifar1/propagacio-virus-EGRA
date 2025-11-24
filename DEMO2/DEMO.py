@@ -113,6 +113,30 @@ def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec
 
     if not vertices:
         return np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0)), None
+    
+    smooth_normals_dict = {}
+
+    # Primera pasada: Acumular normales de todas las caras que usan cada posición
+    for face in faces:
+        for v_idx, vt_idx, vn_idx in face['verts']:
+            pos_tuple = vertices[v_idx] # (x, y, z)
+            
+            # Obtenemos la normal de esta cara específica
+            if vn_idx >= 0:
+                n_tuple = normals[vn_idx]
+                current_normal = glm.vec3(n_tuple)
+            else:
+                current_normal = glm.vec3(0, 1, 0)
+
+            # Acumulamos
+            if pos_tuple not in smooth_normals_dict:
+                smooth_normals_dict[pos_tuple] = glm.vec3(0,0,0)
+            smooth_normals_dict[pos_tuple] += current_normal
+
+    # Normalizar las sumas para obtener el promedio
+    for pos, n_vec in smooth_normals_dict.items():
+        if glm.length(n_vec) > 0:
+            smooth_normals_dict[pos] = glm.normalize(n_vec)
 
     # --- Construcción del Buffer (Pos + Normal + UV + COLOR) ---
     vertex_data = []
@@ -131,15 +155,24 @@ def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec
         
         for v_idx, vt_idx, vn_idx in face['verts']:
             # 1. Posición (3f)
-            vertex_data.extend(vertices[v_idx])
-            # 2. Normal (3f)
+            pos = vertices[v_idx]
+            vertex_data.extend(pos)
+            
+            # 2. Normal Plana (3f) - Para Iluminación
             if vn_idx >= 0: vertex_data.extend(normals[vn_idx])
             else: vertex_data.extend([0, 1, 0])
+            
             # 3. UV (2f)
             if vt_idx >= 0: vertex_data.extend(texcoords[vt_idx])
             else: vertex_data.extend([0.0, 0.0])
-            # 4. COLOR (3f) - ¡NUEVO!
+            
+            # 4. Color (3f)
             vertex_data.extend(color)
+
+            # 5. NORMAL SUAVE (3f) - ¡NUEVO! - Para Contorno
+            # Buscamos la normal promediada usando la posición como clave
+            smooth_n = smooth_normals_dict[pos]
+            vertex_data.extend([smooth_n.x, smooth_n.y, smooth_n.z])
 
     buffer_data = np.array(vertex_data, dtype='f4')
     return buffer_data, bounding_box, texture_file
@@ -148,7 +181,7 @@ def load_obj(path: str) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(640, 360)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1280, 720)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
@@ -211,7 +244,7 @@ class MotorGrafico:
         # self.person_vao_line = self.ctx.vertex_array(self.object.shader, [(first_person.line_vbo, '3f', 'in_position')])
         self.person_vao_tri = self.ctx.vertex_array(
             self.object.shader, 
-            [(first_person.vbo, '3f 3f 2f 3f', 'in_position', 'in_normal', 'in_texcoord', 'in_color')]
+            [(first_person.vbo, '3f 3f 2f 3f 3f', 'in_position', 'in_normal', 'in_texcoord', 'in_color', 'in_smooth_normal')]
         )
         self.person_vao_line = None
 
@@ -338,7 +371,7 @@ class MotorGrafico:
             # Actualitzar càmera
             self.camera.move(self.delta_time)
             self.camera.update_matrices()
-            self.ctx.clear(0.2, 0.2, 0.2)
+            self.ctx.clear(0.01, 0.04, 0.05, 1.0)
 
             # ==========================
             # Spawn de persones
@@ -416,9 +449,9 @@ class MotorGrafico:
 if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
     DATA_PATH = os.path.join(ROOT_PATH,"DEMO2","data","salas")
-    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni.obj")
+    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni_mala.obj")
     PERSON_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","person.obj")
-    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni.mtl")
+    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni_mala.mtl")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================
