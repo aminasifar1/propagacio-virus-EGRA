@@ -99,6 +99,7 @@ class MotorGrafico:
         self.ctx.enable(mgl.DEPTH_TEST)
         self.ctx.front_face = 'ccw'
         self.aspect_ratio = win_size[0] / win_size[1]
+        self.speed = 1
 
         # Camara
         self.camera = Camera(self)
@@ -140,7 +141,7 @@ class MotorGrafico:
         self.max_people = 50
 
         # Creem la primera persona només per obtenir el VAO
-        first_person = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
+        first_person = Person(self, self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
         self.person_vao_tri = self.ctx.vertex_array(self.object.shader, [(first_person.tri_vbo, '3f', 'in_position'), (first_person.nrm_vbo, '3f', 'in_normal')])
         self.person_vao_line = self.ctx.vertex_array(self.object.shader, [(first_person.line_vbo, '3f', 'in_position')])
 
@@ -149,7 +150,7 @@ class MotorGrafico:
 
     # Crear persona
     def create_person(self, schedule=[], spawn='pasillo'):
-        persona = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
+        persona = Person(self, self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
         self.people.append(persona)
         return persona
 
@@ -223,6 +224,7 @@ class MotorGrafico:
 
         while True:
             dt = self.clock.tick(60)/1000.0
+            dt *= self.speed
             current_frame_time = time.time()
             self.delta_time = current_frame_time - last_frame_time
             if self.delta_time == 0: self.delta_time = 1e-6
@@ -247,6 +249,16 @@ class MotorGrafico:
                         self.people.clear()
                         self.tiempo_persona = 0.0
                         print("🔄 Simulación reiniciada")
+                if e.type == pg.KEYDOWN:
+                    if e.key == pg.K_1:
+                        self.speed = 1.0
+                        print("Velocidad x1")
+                    if e.key == pg.K_2:
+                        self.speed = 2.0
+                        print("Velocidad x2")
+                    if e.key == pg.K_3:
+                        self.speed = 3.0
+                        print("Velocidad x3")
 
             # Actualitzar càmera
             self.camera.move(self.delta_time)
@@ -326,9 +338,9 @@ class MotorGrafico:
 # =====================================================
 if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
-    DATA_PATH = os.path.join(ROOT_PATH,"DEMO","data","salas")
-    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO","Models","OBJ.obj")
-    PERSON_PATH = os.path.join(ROOT_PATH,"DEMO","Models","person.obj")
+    DATA_PATH = os.path.join(ROOT_PATH,"DEMO2","data","salas")
+    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","OBJ.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","person.obj")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================
