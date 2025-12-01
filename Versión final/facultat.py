@@ -302,7 +302,12 @@ class Pasillo(Sala):
         return (a, b) if a <= b else (b, a)
 
     def set_rutas(self, a: int, b: int, rutas_ids: List[List[int]]) -> None:
-        self.rutas[self._key(a, b)] = rutas_ids
+        # Convertir cada ruta a un diccionario con su longitud calculada
+        rutas_info = [
+            {"ruta": ruta, "longitud": self._ruta_longitud(ruta)}
+            for ruta in rutas_ids
+        ]
+        self.rutas[self._key(a, b)] = rutas_info
 
     def _ruta_longitud(self, ruta_ids: List[int]) -> float:
         if len(ruta_ids) < 2:
@@ -323,6 +328,11 @@ class Pasillo(Sala):
         return rutas_info[idx]["ruta"]
 
     def get_path(self, start_id: int, goal_id: int) -> List[int]:
+        # Asegurar que los ids son enteros (defensive programming)
+        if not isinstance(start_id, int) or not isinstance(goal_id, int):
+            print(f"[ERROR] get_path recibió tipos inválidos: start_id={type(start_id).__name__}({start_id}), goal_id={type(goal_id).__name__}({goal_id})")
+            return []
+        
         key = self._key(start_id, goal_id)
         rutas = self.rutas.get(key)
         if not rutas:
@@ -359,10 +369,24 @@ class Pasillo(Sala):
         pasillo.salida_id = data.get("salida")
 
         # Cargar rutas precalculadas: convertir "a-b" -> (a,b)
+        # Las rutas pueden estar en dos formatos:
+        # 1. Nuevo: [{"ruta": [...], "longitud": ...}, ...]
+        # 2. Antiguo: [[...], [...]] (lista de listas)
         rutas_dict = {}
         for k, rutas in data.get("rutas", {}).items():
             a, b = map(int, k.split("-"))
-            rutas_dict[(a, b)] = rutas
+            # Si las rutas son diccionarios, usarlas directamente
+            # Si son listas, convertirlas al formato correcto
+            if rutas and isinstance(rutas[0], dict):
+                rutas_dict[(a, b)] = rutas
+            elif rutas and isinstance(rutas[0], list):
+                # Convertir rutas antiguas (lista de listas) al nuevo formato
+                rutas_dict[(a, b)] = [
+                    {"ruta": ruta, "longitud": pasillo._ruta_longitud(ruta)}
+                    for ruta in rutas
+                ]
+            else:
+                rutas_dict[(a, b)] = rutas
         pasillo.rutas = rutas_dict
 
         return pasillo
@@ -378,6 +402,90 @@ class Pasillo(Sala):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_json_struct(data)
+
+
+class WaypointVisualizer:
+    """Renderiza la red de waypoints como líneas conectando los puntos."""
+    
+    def __init__(self, ctx, camera):
+        self.ctx = ctx
+        self.camera = camera
+        self.shader = self.get_shader()
+        self.vbo = None
+        self.vao = None
+        self.vertex_count = 0
+        self.salas_vao = {}  # Almacenar VAO por sala
+
+    def get_shader(self):
+        """Shader simple para dibujar líneas de un color."""
+        return self.ctx.program(
+            vertex_shader='''
+                #version 330
+                in vec3 in_position;
+                uniform mat4 m_proj;
+                uniform mat4 m_view;
+                uniform mat4 m_model;
+                void main() {
+                    gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
+                }
+            ''',
+            fragment_shader='''
+                #version 330
+                uniform vec3 waypoint_color;
+                out vec4 fragColor;
+                void main() {
+                    fragColor = vec4(waypoint_color, 1.0);
+                }
+            '''
+        )
+
+    def build_from_sala(self, sala_name: str, sala: Sala):
+        """Construye el VAO a partir de una sala con sus waypoints."""
+        vertices = []
+        drawn_connections = set()  # Para evitar dibujar líneas duplicadas
+
+        # Iterar sobre los waypoints y sus conexiones
+        for wp_id, waypoint in sala.waypoints.items():
+            for neighbor_obj in waypoint.conexiones:
+                # Encontrar el ID del vecino
+                neighbor_id = None
+                for nid, nwp in sala.waypoints.items():
+                    if nwp is neighbor_obj:
+                        neighbor_id = nid
+                        break
+                
+                if neighbor_id is not None:
+                    # Crear una ID única para la conexión (orden alfabético)
+                    edge = tuple(sorted((wp_id, neighbor_id)))
+                    
+                    if edge not in drawn_connections:
+                        # Agregar vértices de la línea
+                        vertices.extend(waypoint.position)
+                        vertices.extend(neighbor_obj.position)
+                        drawn_connections.add(edge)
+
+        if vertices:
+            import numpy as np
+            vbo = self.ctx.buffer(np.array(vertices, dtype='f4'))
+            vao = self.ctx.vertex_array(self.shader, [(vbo, '3f', 'in_position')])
+            self.salas_vao[sala_name] = {'vao': vao, 'vertex_count': len(vertices) // 3}
+
+    def render(self, facultad: Dict[str, Sala], color=(0.0, 1.0, 0.0)):
+        """Dibuja todas las líneas de waypoints de todas las salas."""
+        m_model = glm.mat4(1.0)
+        
+        # Actualizar uniformes
+        self.shader['m_proj'].write(self.camera.m_proj)
+        self.shader['m_view'].write(self.camera.m_view)
+        self.shader['m_model'].write(m_model)
+        self.shader['waypoint_color'].value = color
+        
+        self.ctx.line_width = 2.0
+        
+        # Renderizar cada sala
+        for sala_name, data in self.salas_vao.items():
+            if data['vao']:
+                data['vao'].render(mode=self.ctx.LINES)
 
 if __name__ == "__main__":
     import os
@@ -417,12 +525,10 @@ if __name__ == "__main__":
         pasillo.connect_ids(i, i + 1)
     pasillo.set_puerta(entrada_id=None, salida_id=4)
 
-    # Añadir rutas precalculadas de ejemplo (ya con longitud incluida)
+    # Añadir rutas precalculadas de ejemplo (solo IDs, longitudes se calculan internamente)
     pasillo.set_rutas(0, 4, [
-        {"ruta": [0, 1, 2, 3, 4],
-         "longitud": float(glm.distance(pasillo.get_wp(0).position, pasillo.get_wp(4).position))},
-        {"ruta": [0, 1, 2, 4],
-         "longitud": float(glm.distance(pasillo.get_wp(0).position, pasillo.get_wp(4).position) * 1.1)}
+        [0, 1, 2, 3, 4],
+        [0, 1, 2, 4]
     ])
 
     # Guardar pasillo a JSON

@@ -7,7 +7,7 @@ import glm
 import sys
 import time
 import random
-from facultat import Sala, Clase, Pasillo
+from facultat import Sala, Clase, Pasillo, WaypointVisualizer
 from escenario import Escenario
 from camera import Camera
 from person import Person
@@ -181,7 +181,7 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(1640, 1024)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1000, 600)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
@@ -222,6 +222,12 @@ class MotorGrafico:
         self.tick_global = 0  # --- Contador global de ticks ---
         self.infection_probability = 0.2
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
+
+        # Waypoint Visualizer
+        self.waypoint_visualizer = WaypointVisualizer(self.ctx, self.camera)
+        self.show_waypoints = False
+        for nombre, sala in self.mundo.items():
+            self.waypoint_visualizer.build_from_sala(nombre, sala)
 
         # Escenari
         scene_data, bounding_box, texture_file = load_obj(scene_path)
@@ -364,6 +370,9 @@ class MotorGrafico:
                     elif e.key == pg.K_b:
                         self.show_bboxes = not self.show_bboxes
                         print(f"Mostrar bounding boxes: {self.show_bboxes}")
+                    elif e.key == pg.K_g:
+                        self.show_waypoints = not self.show_waypoints
+                        print(f"📍 Mostrar waypoints: {self.show_waypoints}")
                     elif e.key == pg.K_r:
                         self.people.clear()
                         self.tiempo_persona = 0.0
@@ -411,6 +420,10 @@ class MotorGrafico:
             self.marker.render()
             light_pos = self.object.update_light_position()
             self.virus.render(light_pos)
+            
+            # Mostrar grafo de waypoints si está activado
+            if self.show_waypoints:
+                self.waypoint_visualizer.render(self.mundo)
 
             # ==========================
             # Actualitzar persones amb col·lisions
