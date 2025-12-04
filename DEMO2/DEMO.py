@@ -368,6 +368,12 @@ class MotorGrafico:
                         self.people.clear()
                         self.tiempo_persona = 0.0
                         print("🔄 Simulación reiniciada")
+                    elif e.key == pg.K_q:
+                        # Cámara anterior
+                        self.camera.prev_preset()
+                    elif e.key == pg.K_e:
+                        # Cámara siguiente
+                        self.camera.next_preset()
                 if e.type == pg.KEYDOWN:
                     if e.key == pg.K_1:
                         self.speed = 1.0
