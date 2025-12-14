@@ -120,8 +120,6 @@ class Virus:
                                 infection_distance=self.infection_distance,
                                 color=getattr(infected.ring, 'color', None))
                 self.rastros.append(nuevo)
-            if nombre == "pasillo":
-                print("Prob contagio sala",nombre,":",mundo[nombre].contagio_aire)
 
             if not uninfected_people:
                 continue
