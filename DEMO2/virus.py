@@ -153,6 +153,14 @@ class Virus:
                         self.infectar(uninfected)
                         uninfected_people.remove(uninfected)    
 
+    def update_particles(self, delta_time: float):
+        """Actualiza el sistema de partículas de todos los rastros cada frame."""
+        for rastro in self.rastros:
+            try:
+                rastro.particles.update(delta_time)
+            except Exception:
+                pass
+
     def render(self,light_pos):
         for rastro in self.rastros:
             try:
@@ -163,7 +171,7 @@ class Virus:
 
 
 class Rastro:
-    def __init__(self, rad, persona: Person, infection_rate: float, evolution_rate: int, tick_duration: float = 0.2, particles_per_step: int = 4, infection_distance: float = None, color=None):
+    def __init__(self, rad, persona: Person, infection_rate: float, evolution_rate: int, tick_duration: float = 0.2, particles_per_step: int = 2, infection_distance: float = None, color=None):
         self.O_radius = rad
         self.radius = rad
         self.infection_rate = infection_rate
@@ -186,7 +194,7 @@ class Rastro:
         #self.particles.emit(self.position, num=self.particles_per_step, color=self.color, radius=self.infection_distance, solid=True)
 
         # Limit concurrent particles per rastro to reduce load
-        self.max_particles = max(8, self.particles_per_step * 4)
+        self.max_particles = max(4, self.particles_per_step * 3)
 
     def evolve(self):
         # emit particles at current position (bounded by max_particles)
@@ -194,11 +202,11 @@ class Rastro:
         if to_emit > 0:
             self.particles.emit(self.position, num=to_emit, color=self.color, radius=self.infection_distance)
 
-        # advance particle system
-        try:
-            self.particles.update(self.tick_duration)
-        except Exception:
-            pass
+        # # advance particle system
+        # try:
+        #     self.particles.update(self.tick_duration)
+        # except Exception:
+        #     pass
 
         # evolve infection radius
         if len(self.evolution) > 1:
@@ -213,12 +221,14 @@ class Rastro:
         return 0
 
     def destroy(self):
-        # release particle GL resources
-        for p in list(self.particles.particles):
-            try:
-                p.vbo.release(); p.shader.release(); p.vao.release()
-            except Exception:
-                pass
+        # # release particle GL resources
+        # for p in list(self.particles.particles):
+        #     try:
+        #         p.vbo.release(); p.shader.release(); p.vao.release()
+        #     except Exception:
+        #         pass
+        # self.particles.particles.clear()
+
         self.particles.particles.clear()
 
     def render(self, light_pos=None):

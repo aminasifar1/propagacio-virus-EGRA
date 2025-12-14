@@ -40,40 +40,49 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
                 
                 if line.startswith('mtllib '):
                     # --- PARSEO DEL ARCHIVO MTL ---
-                    mtl_filename = line.split()[1]
-                    mtl_path = os.path.join(base_dir, mtl_filename)
+                    parts = line.split(maxsplit=1)
+                    mtl_filename = parts[1].strip() if len(parts) > 1 else ""
+
+                    # Candidatos: el indicado por el OBJ y fallback al "<obj_name>.mtl"
+                    candidates = []
+                    if mtl_filename:
+                        candidates.append(os.path.join(base_dir, mtl_filename))
+                    candidates.append(os.path.join(base_dir, os.path.splitext(os.path.basename(path))[0] + ".mtl"))
+
+                    mtl_path = next((p for p in candidates if os.path.exists(p)), None)
+                    if not mtl_path:
+                        print(f"Advertencia: No se encontró el archivo MTL. Probados: {candidates}")
+                        continue
+
                     try:
                         with open(mtl_path, 'r') as mtl_f:
                             mat_name = None
                             mat_color = default_color
                             mat_texture = None
-                            
+
                             for m_line in mtl_f:
                                 m_line = m_line.strip()
                                 if m_line.startswith('newmtl '):
-                                    # Guardar material anterior si existe
                                     if mat_name:
                                         materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
-                                    # Empezar nuevo material
                                     mat_name = m_line.split()[1]
                                     mat_color = default_color
                                     mat_texture = None
-                                    
-                                elif m_line.startswith('Kd '): # Color Difuso
+
+                                elif m_line.startswith('Kd '):
                                     parts = m_line.split()
                                     mat_color = (float(parts[1]), float(parts[2]), float(parts[3]))
-                                    
-                                elif m_line.startswith('map_Kd '): # Textura
-                                    parts = m_line.split()
-                                    # A veces blender pone opciones antes del archivo, cogemos el ultimo
-                                    tex_name = parts[-1] 
-                                    mat_texture = os.path.join(base_dir, tex_name)
-                                    if not texture_file: texture_file = mat_texture
 
-                            # Guardar el último material del archivo
+                                elif m_line.startswith('map_Kd '):
+                                    parts = m_line.split()
+                                    tex_name = parts[-1]
+                                    mat_texture = os.path.join(base_dir, tex_name)
+                                    if not texture_file:
+                                        texture_file = mat_texture
+
                             if mat_name:
                                 materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
-                                
+
                     except FileNotFoundError:
                         print(f"Advertencia: No se encontró el archivo MTL: {mtl_path}")
 
@@ -114,29 +123,37 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
     if not vertices:
         return np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0)), None
     
-    smooth_normals_dict = {}
-
-    # Primera pasada: Acumular normales de todas las caras que usan cada posición
+    smooth_sum = {}  # v_idx -> glm.vec3
     for face in faces:
-        for v_idx, vt_idx, vn_idx in face['verts']:
-            pos_tuple = vertices[v_idx] # (x, y, z)
-            
-            # Obtenemos la normal de esta cara específica
+        (a, b, c) = face['verts']
+
+        # Normal de la cara como fallback si no hay vn
+        pa = glm.vec3(vertices[a[0]])
+        pb = glm.vec3(vertices[b[0]])
+        pc = glm.vec3(vertices[c[0]])
+        face_n = glm.cross(pb - pa, pc - pa)
+        if glm.length(face_n) > 0:
+            face_n = glm.normalize(face_n)
+        else:
+            face_n = glm.vec3(0, 1, 0)
+
+        for (v_idx, vt_idx, vn_idx) in (a, b, c):
             if vn_idx >= 0:
-                n_tuple = normals[vn_idx]
-                current_normal = glm.vec3(n_tuple)
+                n = glm.vec3(normals[vn_idx])
             else:
-                current_normal = glm.vec3(0, 1, 0)
+                n = face_n
 
-            # Acumulamos
-            if pos_tuple not in smooth_normals_dict:
-                smooth_normals_dict[pos_tuple] = glm.vec3(0,0,0)
-            smooth_normals_dict[pos_tuple] += current_normal
+            if v_idx not in smooth_sum:
+                smooth_sum[v_idx] = glm.vec3(0, 0, 0)
+            smooth_sum[v_idx] += n
 
-    # Normalizar las sumas para obtener el promedio
-    for pos, n_vec in smooth_normals_dict.items():
+    # Normalizar
+    smooth_normals = {}
+    for v_idx, n_vec in smooth_sum.items():
         if glm.length(n_vec) > 0:
-            smooth_normals_dict[pos] = glm.normalize(n_vec)
+            smooth_normals[v_idx] = glm.normalize(n_vec)
+        else:
+            smooth_normals[v_idx] = glm.vec3(0, 1, 0)
 
     # --- Construcción del Buffer (Pos + Normal + UV + COLOR) ---
     vertex_data = []
@@ -171,7 +188,7 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
 
             # 5. NORMAL SUAVE (3f) - ¡NUEVO! - Para Contorno
             # Buscamos la normal promediada usando la posición como clave
-            smooth_n = smooth_normals_dict[pos]
+            smooth_n = smooth_normals.get(v_idx, glm.vec3(0, 1, 0))
             vertex_data.extend([smooth_n.x, smooth_n.y, smooth_n.z])
 
     buffer_data = np.array(vertex_data, dtype='f4')
@@ -379,11 +396,11 @@ class MotorGrafico:
                         self.speed = 1.0
                         print("Velocidad x1")
                     if e.key == pg.K_2:
-                        self.speed = 2.0
-                        print("Velocidad x2")
-                    if e.key == pg.K_3:
                         self.speed = 3.0
                         print("Velocidad x3")
+                    if e.key == pg.K_3:
+                        self.speed = 10.0
+                        print("Velocidad x10")
 
             # Actualitzar càmera
             self.camera.move(self.delta_time)
@@ -404,7 +421,7 @@ class MotorGrafico:
                     self.tiempo_persona = 0.0
 
                 # Tick virus
-                self.tick_timer += self.delta_time
+                self.tick_timer += self.delta_time * self.speed
                 if self.tick_timer >= self.tick_duration:
                     self.tick_timer -= self.tick_duration
                     self.tick_global += 1  # --- Incrementa tick global
@@ -416,6 +433,10 @@ class MotorGrafico:
             self.object.render()
             self.marker.render()
             light_pos = self.object.update_light_position()
+
+            # Actualizar partículas de rastros a FPS de simulación
+            self.virus.update_particles(self.delta_time * self.speed)
+
             self.virus.render(light_pos)
 
             # ==========================
@@ -424,7 +445,7 @@ class MotorGrafico:
             for p in self.people:
                 if self.simulando:
                     # old_pos = glm.vec3(p.position)  # guardem posició antiga
-                    p.update(self.delta_time)
+                    p.update(self.delta_time * self.speed)
                     # # Comprovem col·lisions amb altres persones
                     # for other in self.people:
                     #     if other is p: continue

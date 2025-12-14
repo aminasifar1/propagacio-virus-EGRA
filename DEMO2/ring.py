@@ -492,7 +492,11 @@ class Particles:
             prev_depth_mask = None
 
         # Sort back-to-front by distance to camera to get proper translucency
-        sorted_particles = sorted(self.particles, key=lambda p: glm.length2(p.position - self.camera.position), reverse=True)
+        if len(self.particles) < 200:
+            sorted_particles = sorted(self.particles, key=lambda p: glm.length2(p.position - self.camera.position), reverse=True)
+        else:
+            sorted_particles = self.particles
+
         for p in sorted_particles:
             p.render()
 
