@@ -47,6 +47,8 @@ class GraphBuilder:
         self.puertas_coords = []     # coordenadas interiores para conexiones posteriores
         self.puerta_counter = 1      # para IDs 1,2,3...
 
+        self.asientos = []
+
     def _new_id(self):
         """Devuelve un ID con formato pasillo_clase_pisoXXX."""
         id_num = f"{self.pasillo}{self.clase}{self.piso}{self.node_counter:03d}"
@@ -155,6 +157,7 @@ class GraphBuilder:
                 nid = self._new_id()
                 self.pos[nid] = (x, self.pf4[1], z)
                 fila4.append(nid)
+                self.asientos.append(nid)
 
             # FILA DE 3+1 PUNTOS (entre medio y derecha)
             fila3 = []
@@ -164,6 +167,7 @@ class GraphBuilder:
                 nid = self._new_id()
                 self.pos[nid] = (x, self.pf3[1], z)
                 fila3.append(nid)
+                self.asientos.append(nid)
 
             self.filas_ids.append((fila4, fila3))
 
@@ -265,7 +269,7 @@ class GraphBuilder:
             "salida": self.puertas_internas,    
             "pos": self.pos,
             "con": self.con,
-            "asientos": list(self.pos.keys()),
+            "asientos": self.asientos,
         }
 
 
