@@ -6,7 +6,7 @@ import sys
 import time
 import math
 import random
-from ring import Ring
+from ring import Ring, Particles
 from person import Person
 
 import random
@@ -17,7 +17,7 @@ class Virus:
     Comprova col·lisions per transferir infecció.
     """
 
-    def __init__(self,app,td,tt,ip,r, infection_distance,aire = 0.00006,disipar = 0.00005,evolve = 2):
+    def __init__(self,app,td,tt,ip,r, infection_distance,aire = 0.00006,disipar = 0.00005,evolve = 10):
         #self.puff_system = app.puff_system
         self.tick_duration = td
         self.tick_timer = tt 
@@ -113,12 +113,13 @@ class Virus:
         
             for infected in infected_people:
                 infection_radius = infected.ring.contagion_radius
-                nuevo = Rastro(infection_radius,infected,
-                            self.infection_probability,
-                            evolution_rate = self.evolve)
+                nuevo = Rastro(infection_radius, infected,
+                                self.infection_probability,
+                                evolution_rate=self.evolve,
+                                tick_duration=self.tick_duration,
+                                infection_distance=self.infection_distance,
+                                color=getattr(infected.ring, 'color', None))
                 self.rastros.append(nuevo)
-            if nombre == "pasillo":
-                print("Prob contagio sala",nombre,":",mundo[nombre].contagio_aire)
 
             if not uninfected_people:
                 continue
@@ -150,39 +151,89 @@ class Virus:
                         self.infectar(uninfected)
                         uninfected_people.remove(uninfected)    
 
+    def update_particles(self, delta_time: float):
+        """Actualiza el sistema de partículas de todos los rastros cada frame."""
+        for rastro in self.rastros:
+            try:
+                rastro.particles.update(delta_time)
+            except Exception:
+                pass
+
     def render(self,light_pos):
         for rastro in self.rastros:
-            # a = rastro.render(light_pos)
-            pass
+            try:
+                rastro.render(light_pos)
+            except Exception:
+                # protect rendering loop from per-rastro errors
+                pass
 
 
 class Rastro:
-    def __init__(self,rad,persona: Person ,infection_rate : float,evolution_rate : int):
+    def __init__(self, rad, persona: Person, infection_rate: float, evolution_rate: int, tick_duration: float = 0.2, particles_per_step: int = 2, infection_distance: float = None, color=None):
         self.O_radius = rad
         self.radius = rad
         self.infection_rate = infection_rate
         self.position = persona.position
-        # self.evolution = [self.radius-(self.radius/evolution_rate)*i for i in range(evolution_rate+1)]
-        self.evolution = [1-(1/evolution_rate)*i for i in range(evolution_rate+1)]
-        self.ring = Ring(persona.ctx, persona.camera,
-                         radius=self.radius, thickness=0.15, height=0.1,
-                         position=persona.position,
-                         altura=persona.ground_y)
+        self.evolution = [1 - (1 / evolution_rate) * i for i in range(evolution_rate + 1)]
+        self.tick_duration = tick_duration
+        self.particles_per_step = particles_per_step
+
+        # Infection visual parameters
+        self.infection_distance = infection_distance if infection_distance is not None else rad
+        self.color = color if color is not None else (1.0, 0.5, 0.0)
+
+        # Use Particles generator from ring.py
+        self.particles = Particles(persona.ctx, persona.camera)
+        # Use Particles generator from ring.py (solid mode for clearer contagion visualization)
+        #self.particles = Particles(persona.ctx, persona.camera, default_solid=True)
+        # Emit initial burst using infection_distance and ring color
+        self.particles.emit(self.position, num=self.particles_per_step, color=self.color, radius=self.infection_distance)
+        # Using solid mode
+        #self.particles.emit(self.position, num=self.particles_per_step, color=self.color, radius=self.infection_distance, solid=True)
+
+        # Limit concurrent particles per rastro to reduce load
+        self.max_particles = max(4, self.particles_per_step * 3)
 
     def evolve(self):
-        self.evolution.pop(0)
-        self.radius = self.O_radius * self.evolution[0]
+        # emit particles at current position (bounded by max_particles)
+        to_emit = min(self.particles_per_step, max(0, self.max_particles - len(self.particles.particles)))
+        if to_emit > 0:
+            self.particles.emit(self.position, num=to_emit, color=self.color, radius=self.infection_distance)
+
+        # # advance particle system
+        # try:
+        #     self.particles.update(self.tick_duration)
+        # except Exception:
+        #     pass
+
+        # evolve infection radius
+        if len(self.evolution) > 1:
+            self.evolution.pop(0)
+            self.radius = self.O_radius * self.evolution[0]
+        else:
+            self.radius = 0
+
         if self.radius == 0:
             self.destroy()
             return -1
         return 0
-    
-    def destroy(self):
-        self.ring.destroy()
 
-    def render(self, light_pos):
-        self.ring.render(light_pos)
+    def destroy(self):
+        # # release particle GL resources
+        # for p in list(self.particles.particles):
+        #     try:
+        #         p.vbo.release(); p.shader.release(); p.vao.release()
+        #     except Exception:
+        #         pass
+        # self.particles.particles.clear()
+
+        self.particles.particles.clear()
+
+    def render(self, light_pos=None):
+        try:
+            self.particles.render()
+        except Exception:
+            pass
 
     def update(self):
         self.evolve()
-        self.ring.update()
