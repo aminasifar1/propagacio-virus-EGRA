@@ -7,7 +7,7 @@ import glm
 import sys
 import time
 import random
-from facultat import Sala, Clase, Pasillo
+from facultat import Sala, Clase, Pasillo, WaypointVisualizer
 from escenario import Escenario
 from camera import Camera
 from person import Person
@@ -40,49 +40,40 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
                 
                 if line.startswith('mtllib '):
                     # --- PARSEO DEL ARCHIVO MTL ---
-                    parts = line.split(maxsplit=1)
-                    mtl_filename = parts[1].strip() if len(parts) > 1 else ""
-
-                    # Candidatos: el indicado por el OBJ y fallback al "<obj_name>.mtl"
-                    candidates = []
-                    if mtl_filename:
-                        candidates.append(os.path.join(base_dir, mtl_filename))
-                    candidates.append(os.path.join(base_dir, os.path.splitext(os.path.basename(path))[0] + ".mtl"))
-
-                    mtl_path = next((p for p in candidates if os.path.exists(p)), None)
-                    if not mtl_path:
-                        print(f"Advertencia: No se encontró el archivo MTL. Probados: {candidates}")
-                        continue
-
+                    mtl_filename = line.split()[1]
+                    mtl_path = os.path.join(base_dir, mtl_filename)
                     try:
                         with open(mtl_path, 'r') as mtl_f:
                             mat_name = None
                             mat_color = default_color
                             mat_texture = None
-
+                            
                             for m_line in mtl_f:
                                 m_line = m_line.strip()
                                 if m_line.startswith('newmtl '):
+                                    # Guardar material anterior si existe
                                     if mat_name:
                                         materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
+                                    # Empezar nuevo material
                                     mat_name = m_line.split()[1]
                                     mat_color = default_color
                                     mat_texture = None
-
-                                elif m_line.startswith('Kd '):
+                                    
+                                elif m_line.startswith('Kd '): # Color Difuso
                                     parts = m_line.split()
                                     mat_color = (float(parts[1]), float(parts[2]), float(parts[3]))
-
-                                elif m_line.startswith('map_Kd '):
+                                    
+                                elif m_line.startswith('map_Kd '): # Textura
                                     parts = m_line.split()
-                                    tex_name = parts[-1]
+                                    # A veces blender pone opciones antes del archivo, cogemos el ultimo
+                                    tex_name = parts[-1] 
                                     mat_texture = os.path.join(base_dir, tex_name)
-                                    if not texture_file:
-                                        texture_file = mat_texture
+                                    if not texture_file: texture_file = mat_texture
 
+                            # Guardar el último material del archivo
                             if mat_name:
                                 materials[mat_name] = {'color': mat_color, 'texture': mat_texture}
-
+                                
                     except FileNotFoundError:
                         print(f"Advertencia: No se encontró el archivo MTL: {mtl_path}")
 
@@ -123,37 +114,29 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
     if not vertices:
         return np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0)), None
     
-    smooth_sum = {}  # v_idx -> glm.vec3
+    smooth_normals_dict = {}
+
+    # Primera pasada: Acumular normales de todas las caras que usan cada posición
     for face in faces:
-        (a, b, c) = face['verts']
-
-        # Normal de la cara como fallback si no hay vn
-        pa = glm.vec3(vertices[a[0]])
-        pb = glm.vec3(vertices[b[0]])
-        pc = glm.vec3(vertices[c[0]])
-        face_n = glm.cross(pb - pa, pc - pa)
-        if glm.length(face_n) > 0:
-            face_n = glm.normalize(face_n)
-        else:
-            face_n = glm.vec3(0, 1, 0)
-
-        for (v_idx, vt_idx, vn_idx) in (a, b, c):
+        for v_idx, vt_idx, vn_idx in face['verts']:
+            pos_tuple = vertices[v_idx] # (x, y, z)
+            
+            # Obtenemos la normal de esta cara específica
             if vn_idx >= 0:
-                n = glm.vec3(normals[vn_idx])
+                n_tuple = normals[vn_idx]
+                current_normal = glm.vec3(n_tuple)
             else:
-                n = face_n
+                current_normal = glm.vec3(0, 1, 0)
 
-            if v_idx not in smooth_sum:
-                smooth_sum[v_idx] = glm.vec3(0, 0, 0)
-            smooth_sum[v_idx] += n
+            # Acumulamos
+            if pos_tuple not in smooth_normals_dict:
+                smooth_normals_dict[pos_tuple] = glm.vec3(0,0,0)
+            smooth_normals_dict[pos_tuple] += current_normal
 
-    # Normalizar
-    smooth_normals = {}
-    for v_idx, n_vec in smooth_sum.items():
+    # Normalizar las sumas para obtener el promedio
+    for pos, n_vec in smooth_normals_dict.items():
         if glm.length(n_vec) > 0:
-            smooth_normals[v_idx] = glm.normalize(n_vec)
-        else:
-            smooth_normals[v_idx] = glm.vec3(0, 1, 0)
+            smooth_normals_dict[pos] = glm.normalize(n_vec)
 
     # --- Construcción del Buffer (Pos + Normal + UV + COLOR) ---
     vertex_data = []
@@ -188,7 +171,7 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
 
             # 5. NORMAL SUAVE (3f) - ¡NUEVO! - Para Contorno
             # Buscamos la normal promediada usando la posición como clave
-            smooth_n = smooth_normals.get(v_idx, glm.vec3(0, 1, 0))
+            smooth_n = smooth_normals_dict[pos]
             vertex_data.extend([smooth_n.x, smooth_n.y, smooth_n.z])
 
     buffer_data = np.array(vertex_data, dtype='f4')
@@ -198,7 +181,7 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(1640, 1024)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1000, 600)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
@@ -239,6 +222,12 @@ class MotorGrafico:
         self.tick_global = 0  # --- Contador global de ticks ---
         self.infection_probability = 0.2
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
+
+        # Waypoint Visualizer
+        self.waypoint_visualizer = WaypointVisualizer(self.ctx, self.camera)
+        self.show_waypoints = False
+        for nombre, sala in self.mundo.items():
+            self.waypoint_visualizer.build_from_sala(nombre, sala)
 
         # Escenari
         scene_data, bounding_box, texture_file = load_obj(scene_path)
@@ -381,26 +370,23 @@ class MotorGrafico:
                     elif e.key == pg.K_b:
                         self.show_bboxes = not self.show_bboxes
                         print(f"Mostrar bounding boxes: {self.show_bboxes}")
+                    elif e.key == pg.K_g:
+                        self.show_waypoints = not self.show_waypoints
+                        print(f"📍 Mostrar waypoints: {self.show_waypoints}")
                     elif e.key == pg.K_r:
                         self.people.clear()
                         self.tiempo_persona = 0.0
                         print("🔄 Simulación reiniciada")
-                    elif e.key == pg.K_q:
-                        # Cámara anterior
-                        self.camera.prev_preset()
-                    elif e.key == pg.K_e:
-                        # Cámara siguiente
-                        self.camera.next_preset()
                 if e.type == pg.KEYDOWN:
                     if e.key == pg.K_1:
                         self.speed = 1.0
                         print("Velocidad x1")
                     if e.key == pg.K_2:
+                        self.speed = 2.0
+                        print("Velocidad x2")
+                    if e.key == pg.K_3:
                         self.speed = 3.0
                         print("Velocidad x3")
-                    if e.key == pg.K_3:
-                        self.speed = 10.0
-                        print("Velocidad x10")
 
             # Actualitzar càmera
             self.camera.move(self.delta_time)
@@ -421,7 +407,7 @@ class MotorGrafico:
                     self.tiempo_persona = 0.0
 
                 # Tick virus
-                self.tick_timer += self.delta_time * self.speed
+                self.tick_timer += self.delta_time
                 if self.tick_timer >= self.tick_duration:
                     self.tick_timer -= self.tick_duration
                     self.tick_global += 1  # --- Incrementa tick global
@@ -433,11 +419,11 @@ class MotorGrafico:
             self.object.render()
             self.marker.render()
             light_pos = self.object.update_light_position()
-
-            # Actualizar partículas de rastros a FPS de simulación
-            self.virus.update_particles(self.delta_time * self.speed)
-
             self.virus.render(light_pos)
+            
+            # Mostrar grafo de waypoints si está activado
+            if self.show_waypoints:
+                self.waypoint_visualizer.render(self.mundo)
 
             # ==========================
             # Actualitzar persones amb col·lisions
@@ -445,7 +431,7 @@ class MotorGrafico:
             for p in self.people:
                 if self.simulando:
                     # old_pos = glm.vec3(p.position)  # guardem posició antiga
-                    p.update(self.delta_time * self.speed)
+                    p.update(self.delta_time)
                     # # Comprovem col·lisions amb altres persones
                     # for other in self.people:
                     #     if other is p: continue

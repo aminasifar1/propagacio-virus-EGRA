@@ -46,7 +46,6 @@ class PuffSystem:
         self.ctx.disable(mgl.BLEND)
 
 class PuffParticle:
-    _shared = None  # Compartido entre todas las partículas
     """Partícula de humo para la animación de contagio."""
     def __init__(self, ctx, camera, position, color=(1.0, 0.5, 0.0)):
         self.ctx = ctx
@@ -68,40 +67,30 @@ class PuffParticle:
         self.create_sphere()
         
     def create_sphere(self):
-        """STEP 4: Crea una esfera compartida para todas las partículas (mismo look)."""
-        if PuffParticle._shared is not None:
-            self.vbo = PuffParticle._shared["vbo"]
-            self.shader = PuffParticle._shared["shader"]
-            self.vao = PuffParticle._shared["vao"]
-            return
-
+        """Crea una esfera simple para representar la partícula."""
         vertices = []
         segments = 8
-
+        
         for i in range(segments):
             theta1 = (i / segments) * math.pi
             theta2 = ((i + 1) / segments) * math.pi
-
+            
             for j in range(segments * 2):
                 phi1 = (j / (segments * 2)) * 2 * math.pi
                 phi2 = ((j + 1) / (segments * 2)) * 2 * math.pi
-
+                
+                # Vértices de un quad en la esfera
                 v1 = (math.sin(theta1) * math.cos(phi1), math.cos(theta1), math.sin(theta1) * math.sin(phi1))
                 v2 = (math.sin(theta1) * math.cos(phi2), math.cos(theta1), math.sin(theta1) * math.sin(phi2))
                 v3 = (math.sin(theta2) * math.cos(phi2), math.cos(theta2), math.sin(theta2) * math.sin(phi2))
                 v4 = (math.sin(theta2) * math.cos(phi1), math.cos(theta2), math.sin(theta2) * math.sin(phi1))
-
+                
+                # Dos triángulos
                 vertices.extend([v1, v2, v3, v1, v3, v4])
-
-        vbo = self.ctx.buffer(np.array(vertices, dtype="f4").flatten())
-        shader = self.get_shader()
-        vao = self.ctx.vertex_array(shader, [(vbo, "3f", "in_position")])
-
-        PuffParticle._shared = {"vbo": vbo, "shader": shader, "vao": vao}
-
-        self.vbo = vbo
-        self.shader = shader
-        self.vao = vao
+        
+        self.vbo = self.ctx.buffer(np.array(vertices, dtype='f4').flatten())
+        self.shader = self.get_shader()
+        self.vao = self.ctx.vertex_array(self.shader, [(self.vbo, '3f', 'in_position')])
     
     def get_shader(self):
         """Shader con transparencia para la partícula."""

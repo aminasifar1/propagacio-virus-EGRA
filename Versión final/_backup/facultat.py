@@ -328,6 +328,11 @@ class Pasillo(Sala):
         return rutas_info[idx]["ruta"]
 
     def get_path(self, start_id: int, goal_id: int) -> List[int]:
+        # Asegurar que los ids son enteros (defensive programming)
+        if not isinstance(start_id, int) or not isinstance(goal_id, int):
+            print(f"[ERROR] get_path recibió tipos inválidos: start_id={type(start_id).__name__}({start_id}), goal_id={type(goal_id).__name__}({goal_id})")
+            return []
+        
         key = self._key(start_id, goal_id)
         rutas = self.rutas.get(key)
         if not rutas:

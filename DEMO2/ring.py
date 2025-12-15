@@ -373,27 +373,37 @@ class Particle:
         else:
             self.scale = self.max_scale
 
-    def render(self):
+    def render(self, alpha_mul=1.0):
         if self.is_dead:
             return
+
         progress = self.age / self.lifetime
-        alpha = 1.0 - progress
-        # Enforce a minimum alpha so particles remain visible
-        alpha = max(self.min_alpha, alpha)
-        # If particle is solid mode, force full opacity
-        if self.solid:
-            alpha = 1.0
+
+        def smoothstep01(x: float) -> float:
+            x = max(0.0, min(1.0, x))
+            return x * x * (3.0 - 2.0 * x)
+
+        # Fade in/out en segundos (ajusta si quieres)
+        fade_in_time = 0.08
+        fade_out_time = 0.12
+
+        fade_in = smoothstep01(self.age / fade_in_time) if fade_in_time > 0 else 1.0
+        remaining = self.lifetime - self.age
+        fade_out = smoothstep01(remaining / fade_out_time) if fade_out_time > 0 else 1.0
+
+        alpha = (1.0 - progress) * fade_in * fade_out
+        alpha *= float(alpha_mul)
+        alpha = max(0.0, min(1.0, alpha))
+
         # Billboard facing camera: pass center and camera axes
         self.shader['m_proj'].write(self.camera.m_proj)
         self.shader['m_view'].write(self.camera.m_view)
         self.shader['center'].value = tuple(self.position)
-        # Camera provides right and up vectors
         self.shader['cam_right'].value = tuple(self.camera.right)
         self.shader['cam_up'].value = tuple(self.camera.up)
         self.shader['scale'].value = self.scale
         self.shader['particle_color'].value = self.color
         self.shader['alpha'].value = alpha
-        # Set shader visual-mode uniforms (solid vs soft mask)
         self.shader['u_solid'].value = 1 if self.solid else 0
         self.shader['mask_inner'].value = self.mask_inner
         self.shader['mask_outer'].value = self.mask_outer
@@ -451,7 +461,7 @@ class Particles:
 
         # Choose a particle scale proportional to the emission radius so larger
         # infection zones don't produce unreasonably large particles.
-        particle_max_scale = max(0.05, min(0.25, r * 0.2))
+        particle_max_scale = max(0.05, min(0.90, r * 0.2))
         # Resolve per-emission visual overrides or fall back to system defaults
         solid_mode = self.default_solid if solid is None else bool(solid)
         inner = mask_inner if mask_inner is not None else self.mask_inner
@@ -479,28 +489,30 @@ class Particles:
                 # shared GL resources are not released per-particle
                 self.particles.remove(p)
 
-    def render(self):
-        # enable blending for transparency and avoid writing particle fragments
-        # into the depth buffer so transparent particles don't occlude each other.
+    def render(self, alpha_mul: float = 1.0, blend_additive: bool = False):
         self.ctx.enable(mgl.BLEND)
-        self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
-        # Keep depth test, but disable depth writes while drawing particles.
+        if blend_additive:
+            self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE
+        else:
+            self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
         try:
             prev_depth_mask = getattr(self.ctx, 'depth_mask', True)
             self.ctx.depth_mask = False
         except Exception:
             prev_depth_mask = None
 
-        # Sort back-to-front by distance to camera to get proper translucency
         if len(self.particles) < 200:
-            sorted_particles = sorted(self.particles, key=lambda p: glm.length2(p.position - self.camera.position), reverse=True)
+            sorted_particles = sorted(
+                self.particles,
+                key=lambda p: glm.length2(p.position - self.camera.position),
+                reverse=True
+            )
         else:
             sorted_particles = self.particles
 
         for p in sorted_particles:
-            p.render()
+            p.render(alpha_mul=alpha_mul)
 
-        # restore depth write state
         try:
             if prev_depth_mask is not None:
                 self.ctx.depth_mask = prev_depth_mask

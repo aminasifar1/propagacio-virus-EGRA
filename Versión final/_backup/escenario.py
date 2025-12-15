@@ -179,7 +179,7 @@ class Escenario:
         # Pasada 1: Contorno
         self.ctx.cull_face = 'front' 
         if 'outline_width' in self.shader:
-            self.shader['outline_width'].value = 0.01
+            self.shader['outline_width'].value = 0.03 
         self.vao.render(mode=mgl.TRIANGLES)
 
         # Pasada 2: Objeto

@@ -6,7 +6,7 @@ import sys
 import time
 import math
 import random
-from ring import Ring
+from ring import Ring, Particles
 from person import Person
 
 import random
@@ -17,7 +17,7 @@ class Virus:
     Comprova col·lisions per transferir infecció.
     """
 
-    def __init__(self,app,td,tt,ip,r, infection_distance,aire = 0.00006,disipar = 0.00005,evolve = 2):
+    def __init__(self,app,td,tt,ip,r, infection_distance,aire = 0.00006,disipar = 0.00005,evolve = 10):
         #self.puff_system = app.puff_system
         self.tick_duration = td
         self.tick_timer = tt 
@@ -28,6 +28,58 @@ class Virus:
         self.rastros = []
         self.contagio_aire = aire
         self.disipar = disipar
+
+        # STEP 2: trail por distancia (no por tick)
+        self.trail_spacing = 0.35  # distancia entre marcas del rastro (ajusta: 0.30 más denso, 0.60 más ligero)
+        self.trail_max_rastros_per_tick_per_person = 3  # evita picos si alguien teleporta/cambia sala
+
+        # pid -> last_position (vec3)
+        self._trail_last_pos = {}
+
+    def _spawn_trail_for_infected(self, infected: Person, sala_name: str):
+        """STEP 2: genera rastros detrás del infectado según distancia recorrida.
+        Mantiene el look (rastros densos), pero evita que se acumulen encima.
+        """
+        pid = id(infected)
+        current = glm.vec3(infected.position)
+
+        # inicialización
+        if pid not in self._trail_last_pos:
+            self._trail_last_pos[pid] = glm.vec3(current)
+            return
+
+        last = self._trail_last_pos[pid]
+        delta = current - last
+        dist = glm.length(delta)
+
+        if dist < self.trail_spacing:
+            return
+
+        direction = glm.normalize(delta) if dist > 1e-6 else glm.vec3(0, 0, 0)
+        steps = int(dist // self.trail_spacing)
+        steps = min(steps, self.trail_max_rastros_per_tick_per_person)
+
+        # ponemos varios puntos intermedios, atrás del movimiento
+        for i in range(1, steps + 1):
+            pos = last + direction * (i * self.trail_spacing)
+
+            # rastro con la misma estética que ya tienes (Particles)
+            infection_radius = infected.ring.contagion_radius if infected.ring else self.infection_distance
+            nuevo = Rastro(
+                infection_radius,
+                infected,
+                self.infection_probability,
+                evolution_rate=self.evolve,
+                tick_duration=self.tick_duration,
+                infection_distance=self.infection_distance,
+                color=getattr(infected.ring, 'color', None),
+                position_override=pos,          # STEP 2: posición fija del punto del trail
+                sala_name=sala_name,            # STEP 2: etiqueta de sala (para optimizar luego)
+            )
+            self.rastros.append(nuevo)
+
+        # actualizamos el último punto
+        self._trail_last_pos[pid] = glm.vec3(current)
 
     def update(self,td,tt,ip,r):
         self.tick_duration = td
@@ -84,11 +136,19 @@ class Virus:
     def check_infections(self,mundo):
         """Comprova col·lisions per transferir infecció."""
 
+        # for rastro in self.rastros:
+        #     check = rastro.evolve()
+        #     if check == -1:
+        #         self.rastros.remove(rastro)
+        #         rastro.destroy()
+
+        new_rastros = []
         for rastro in self.rastros:
-            check = rastro.evolve()
-            if check == -1:
-                self.rastros.remove(rastro)
+            if rastro.evolve() == -1:
                 rastro.destroy()
+            else:
+                new_rastros.append(rastro)
+        self.rastros = new_rastros
 
 
         for nombre in mundo:
@@ -112,77 +172,197 @@ class Virus:
                     mundo[nombre].contagio_aire = 1.0
         
             for infected in infected_people:
-                infection_radius = infected.ring.contagion_radius
-                nuevo = Rastro(infection_radius,infected,
-                            self.infection_probability,
-                            evolution_rate = self.evolve)
-                self.rastros.append(nuevo)
-            if nombre == "pasillo":
-                print("Prob contagio sala",nombre,":",mundo[nombre].contagio_aire)
+                # infection_radius = infected.ring.contagion_radius
+                # nuevo = Rastro(infection_radius, infected,
+                #                 self.infection_probability,
+                #                 evolution_rate=self.evolve,
+                #                 tick_duration=self.tick_duration,
+                #                 infection_distance=self.infection_distance,
+                #                 color=getattr(infected.ring, 'color', None))
+                # self.rastros.append(nuevo)
+                self._spawn_trail_for_infected(infected, sala_name=nombre)
 
             if not uninfected_people:
                 continue
 
+            # for infected in infected_people:
+            #     infection_radius = infected.ring.contagion_radius
+            #     for uninfected in uninfected_people[:]: # iterar sobre una copia de la lista para poder modificarla mientras se itera
+                    
+            #         dist = glm.length(infected.position - uninfected.position)
+                    
+            #         if dist < infection_radius:
+            #             if random.random() < self.infection_probability:
+            #                 self.infectar(uninfected)
+            #                 uninfected_people.remove(uninfected)
+
+            cell_size = max(0.5, float(self.infection_distance))
+            grid = SpatialHashGrid2D(cell_size)
+            grid.build(mundo[nombre].personas)
+
             for infected in infected_people:
                 infection_radius = infected.ring.contagion_radius
-                for uninfected in uninfected_people[:]: # iterar sobre una copia de la lista para poder modificarla mientras se itera
-                    
-                    dist = glm.length(infected.position - uninfected.position)
-                    
-                    if dist < infection_radius:
-                        if random.random() < self.infection_probability:
-                            self.infectar(uninfected)
-                            uninfected_people.remove(uninfected)
+                for candidate in grid.neighbors(infected.position):
+                    if candidate.ring:
+                        continue
+                    # solo infectamos si está en la lista local de no infectados
+                    # (esto mantiene la lógica por sala)
+                    if candidate not in uninfected_people:
+                        continue
+
+                    dist = glm.length(infected.position - candidate.position)
+                    if dist < infection_radius and random.random() < self.infection_probability:
+                        self.infectar(candidate)
+                        if candidate in uninfected_people:
+                            uninfected_people.remove(candidate)
             
-            for uninfected in uninfected_people:
+            for uninfected in uninfected_people[:]:
                 if random.random() < mundo[nombre].contagio_aire:
                     self.infectar(uninfected)
                     uninfected_people.remove(uninfected)
-            
 
+            # for rastro in self.rastros:
+            #     for uninfected in uninfected_people[:]:
+            #         dist = glm.length(rastro.position - uninfected.position)
+            #         if dist < rastro.radius:
+            #             if random.random() < rastro.infection_rate:
+            #                 self.infectar(uninfected)
+            #                 uninfected_people.remove(uninfected)    
+
+            # STEP 5: grid también para rastros
+            # (filtramos rastros por sala para no chequear contra todos)
+            rastros_sala = [r for r in self.rastros if getattr(r, "sala_name", None) == nombre or getattr(r, "sala_name", None) is None]
+
+            for rastro in rastros_sala:
+                for candidate in grid.neighbors(rastro.position):
+                    if candidate.ring:
+                        continue
+                    if candidate not in uninfected_people:
+                        continue
+
+                    dist = glm.length(rastro.position - candidate.position)
+                    if dist < rastro.radius and random.random() < rastro.infection_rate:
+                        self.infectar(candidate)
+                        if candidate in uninfected_people:
+                            uninfected_people.remove(candidate)
+
+    def update_particles(self, delta_time: float):
+        """Actualiza el sistema de partículas de todos los rastros cada frame."""
         for rastro in self.rastros:
-            for uninfected in uninfected_people:
-
-                dist = glm.length(rastro.position - uninfected.position)
-                
-                if dist < rastro.radius:
-                    if random.random() < rastro.infection_rate:
-                        self.infectar(uninfected)
-                        uninfected_people.remove(uninfected)    
+            try:
+                rastro.particles.update(delta_time)
+            except Exception:
+                pass
 
     def render(self,light_pos):
         for rastro in self.rastros:
-            # a = rastro.render(light_pos)
-            pass
+            try:
+                rastro.render(light_pos)
+            except Exception:
+                # protect rendering loop from per-rastro errors
+                pass
 
 
 class Rastro:
-    def __init__(self,rad,persona: Person ,infection_rate : float,evolution_rate : int):
+    def __init__(self, rad, persona: Person, infection_rate: float, evolution_rate: int, tick_duration: float = 0.2,
+                 particles_per_step: int = 3, infection_distance: float = None, color=None, position_override=None, sala_name: str = None):
         self.O_radius = rad
         self.radius = rad
         self.infection_rate = infection_rate
-        self.position = persona.position
-        # self.evolution = [self.radius-(self.radius/evolution_rate)*i for i in range(evolution_rate+1)]
-        self.evolution = [1-(1/evolution_rate)*i for i in range(evolution_rate+1)]
-        self.ring = Ring(persona.ctx, persona.camera,
-                         radius=self.radius, thickness=0.15, height=0.1,
-                         position=persona.position,
-                         altura=persona.ground_y)
+        if position_override is not None:
+            self.position = glm.vec3(position_override)
+        else:
+            self.position = glm.vec3(persona.position)
+        self.expired = False
+        self.sala_name = sala_name
+        self.evolution = [1 - (1 / evolution_rate) * i for i in range(evolution_rate + 1)]
+        self.tick_duration = tick_duration
+        self.particles_per_step = particles_per_step
+
+        # Infection visual parameters
+        self.infection_distance = infection_distance if infection_distance is not None else rad
+        self.color = color if color is not None else (1.0, 0.5, 0.0)
+
+        # Use Particles generator from ring.py
+        self.particles = Particles(persona.ctx, persona.camera, min_alpha=0.0)
+        # Use Particles generator from ring.py (solid mode for clearer contagion visualization)
+        #self.particles = Particles(persona.ctx, persona.camera, default_solid=True)
+        # Emit initial burst using infection_distance and ring color
+        self.particles.emit(self.position, num=self.particles_per_step, color=self.color, radius=self.infection_distance)
+        # Using solid mode
+        #self.particles.emit(self.position, num=self.particles_per_step, color=self.color, radius=self.infection_distance, solid=True)
+
+        # Limit concurrent particles per rastro to reduce load
+        self.max_particles = max(4, self.particles_per_step * 3)
 
     def evolve(self):
-        self.evolution.pop(0)
-        self.radius = self.O_radius * self.evolution[0]
-        if self.radius == 0:
-            self.destroy()
+        if not self.expired:
+            # emit particles at current position (bounded by max_particles)
+            to_emit = min(self.particles_per_step, max(0, self.max_particles - len(self.particles.particles)))
+            if to_emit > 0:
+                self.particles.emit(self.position, num=to_emit, color=self.color, radius=self.infection_distance)
+
+            # # advance particle system
+            # try:
+            #     self.particles.update(self.tick_duration)
+            # except Exception:
+            #     pass
+
+            # evolve infection radius
+            if len(self.evolution) > 1:
+                self.evolution.pop(0)
+                self.radius = self.O_radius * self.evolution[0]
+            else:
+                self.radius = 0
+
+            if self.radius == 0:
+                self.expired = True
+                self.infection_rate = 0.0
+                return 0
+        
+        if len(self.particles.particles) == 0:
             return -1
         return 0
-    
-    def destroy(self):
-        self.ring.destroy()
 
-    def render(self, light_pos):
-        self.ring.render(light_pos)
+    def destroy(self):
+        # # release particle GL resources
+        # for p in list(self.particles.particles):
+        #     try:
+        #         p.vbo.release(); p.shader.release(); p.vao.release()
+        #     except Exception:
+        #         pass
+        # self.particles.particles.clear()
+
+        self.particles.particles.clear()
+
+    def render(self, light_pos=None):
+        try:
+            self.particles.render()
+        except Exception:
+            pass
 
     def update(self):
         self.evolve()
-        self.ring.update()
+
+
+# STEP 5: grid espacial 2D (XZ) para acelerar búsquedas
+class SpatialHashGrid2D:
+    def __init__(self, cell_size: float):
+        self.cell_size = max(1e-6, float(cell_size))
+        self.cells = {}  # (ix, iz) -> [Person]
+
+    def _cell(self, pos: glm.vec3):
+        return (int(math.floor(pos.x / self.cell_size)), int(math.floor(pos.z / self.cell_size)))
+
+    def build(self, people):
+        self.cells.clear()
+        for p in people:
+            key = self._cell(p.position)
+            self.cells.setdefault(key, []).append(p)
+
+    def neighbors(self, pos: glm.vec3):
+        ix, iz = self._cell(pos)
+        for dx in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                for p in self.cells.get((ix + dx, iz + dz), []):
+                    yield p

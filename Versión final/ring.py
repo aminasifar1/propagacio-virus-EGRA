@@ -231,3 +231,292 @@ class Ring:
         if 'outline_width' in self.shader:
             self.shader['outline_width'].value = 0.0
         self.vao.render(mode=mgl.TRIANGLES)
+
+
+class Particle:
+    """Simple puff particle rendered as a small billboarded quad.
+
+    Supports both the default soft circular masked particles and an optional
+    solid-color mode (no mask). The shader exposes uniforms to switch between
+    the modes, so you can toggle per-particle or per-emission.
+    """
+    def __init__(self, ctx, camera, position, color=(1.0, 0.5, 0.0), lifetime=0.6, max_scale=0.25, min_alpha=0.25, solid=False, mask_inner=0.35, mask_outer=0.5):
+        self.ctx = ctx
+        self.camera = camera
+        self.position = glm.vec3(position)
+        self.color = color
+        self.lifetime = lifetime
+        self.age = 0.0
+        self.scale = 0.05
+        self.max_scale = max_scale
+        self.min_alpha = min_alpha
+        self.solid = bool(solid)
+        self.mask_inner = float(mask_inner)
+        self.mask_outer = float(mask_outer)
+        self.velocity = glm.vec3(
+            random.uniform(-0.3, 0.3),
+            random.uniform(0.2, 0.8),
+            random.uniform(-0.3, 0.3)
+        )
+        self.is_dead = False
+        self._init_shared()
+
+    def _init_shared(self):
+        """Initialize shared quad geometry and shader for all particles."""
+        if hasattr(Particle, '_shared') and Particle._shared is not None:
+            self.shader = Particle._shared['shader']
+            self.vao = Particle._shared['vao']
+            return
+
+        # Quad (two triangles) with UVs in 0..1
+        verts = [
+            # x,y,z, u,v
+            -0.5, -0.5, 0.0, 0.0, 0.0,
+             0.5, -0.5, 0.0, 1.0, 0.0,
+             0.5,  0.5, 0.0, 1.0, 1.0,
+            -0.5, -0.5, 0.0, 0.0, 0.0,
+             0.5,  0.5, 0.0, 1.0, 1.0,
+            -0.5,  0.5, 0.0, 0.0, 1.0,
+        ]
+        vbo = self.ctx.buffer(np.array(verts, dtype='f4').flatten())
+
+        shader = self._get_shader_quad()
+        vao = self.ctx.vertex_array(shader, [(vbo, '3f 2f', 'in_position', 'in_uv')])
+
+        Particle._shared = {'vbo': vbo, 'shader': shader, 'vao': vao}
+        self.shader = shader
+        self.vao = vao
+
+    def _get_shader(self):
+        return self.ctx.program(
+            vertex_shader='''
+                #version 330
+                in vec3 in_position;
+                uniform mat4 m_proj;
+                uniform mat4 m_view;
+                uniform mat4 m_model;
+                void main() {
+                    gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
+                }
+            ''',
+            fragment_shader='''
+                #version 330
+                uniform vec3 particle_color;
+                uniform float alpha;
+                out vec4 fragColor;
+                void main() {
+                    fragColor = vec4(particle_color, alpha);
+                }
+            '''
+        )
+
+    def _get_shader_quad(self):
+        return self.ctx.program(
+            vertex_shader='''
+                #version 330
+                in vec3 in_position; // xy = quad coords (-0.5..0.5)
+                in vec2 in_uv;
+                out vec2 v_uv;
+                uniform mat4 m_proj;
+                uniform mat4 m_view;
+                uniform vec3 center;
+                uniform vec3 cam_right;
+                uniform vec3 cam_up;
+                uniform float scale;
+                void main() {
+                    v_uv = in_uv;
+                    vec3 world_pos = center + cam_right * in_position.x * scale + cam_up * in_position.y * scale;
+                    gl_Position = m_proj * m_view * vec4(world_pos, 1.0);
+                }
+            ''',
+            fragment_shader='''
+                #version 330
+                in vec2 v_uv;
+                uniform vec3 particle_color;
+                uniform float alpha;
+                // Solid mode: if u_solid==1, render flat color inside a circular discard.
+                uniform int u_solid;
+                // Mask parameters for the soft circular mask
+                uniform float mask_inner;
+                uniform float mask_outer;
+                out vec4 fragColor;
+                void main() {
+                    // compute circular mask for both solid and soft modes
+                    vec2 uv = v_uv - vec2(0.5);
+                    float d = length(uv);
+                    float mask = 1.0 - smoothstep(mask_inner, mask_outer, d);
+                    // discard outside circle to get a round particle
+                    if (mask <= 0.005) discard;
+
+                    if (u_solid == 1) {
+                        // Solid: inside the circle render flat color (respect alpha)
+                        fragColor = vec4(particle_color, alpha);
+                        return;
+                    }
+
+                    // Soft: multiply alpha by mask for smooth falloff
+                    fragColor = vec4(particle_color, alpha * mask);
+                }
+            '''
+        )
+
+    def update(self, delta_time):
+        self.age += delta_time
+        if self.age >= self.lifetime:
+            self.is_dead = True
+            return
+        self.position += self.velocity * delta_time
+        self.velocity.y -= 1.5 * delta_time
+        progress = self.age / self.lifetime
+        if progress < 0.3:
+            self.scale = self.max_scale * (progress / 0.3)
+        else:
+            self.scale = self.max_scale
+
+    def render(self, alpha_mul=1.0):
+        if self.is_dead:
+            return
+
+        progress = self.age / self.lifetime
+
+        def smoothstep01(x: float) -> float:
+            x = max(0.0, min(1.0, x))
+            return x * x * (3.0 - 2.0 * x)
+
+        # Fade in/out en segundos (ajusta si quieres)
+        fade_in_time = 0.08
+        fade_out_time = 0.12
+
+        fade_in = smoothstep01(self.age / fade_in_time) if fade_in_time > 0 else 1.0
+        remaining = self.lifetime - self.age
+        fade_out = smoothstep01(remaining / fade_out_time) if fade_out_time > 0 else 1.0
+
+        alpha = (1.0 - progress) * fade_in * fade_out
+        alpha *= float(alpha_mul)
+        alpha = max(0.0, min(1.0, alpha))
+
+        # Billboard facing camera: pass center and camera axes
+        self.shader['m_proj'].write(self.camera.m_proj)
+        self.shader['m_view'].write(self.camera.m_view)
+        self.shader['center'].value = tuple(self.position)
+        self.shader['cam_right'].value = tuple(self.camera.right)
+        self.shader['cam_up'].value = tuple(self.camera.up)
+        self.shader['scale'].value = self.scale
+        self.shader['particle_color'].value = self.color
+        self.shader['alpha'].value = alpha
+        self.shader['u_solid'].value = 1 if self.solid else 0
+        self.shader['mask_inner'].value = self.mask_inner
+        self.shader['mask_outer'].value = self.mask_outer
+        self.vao.render(mode=mgl.TRIANGLES)
+
+
+class Particles:
+    """Particle generator managing multiple `Particle` instances.
+
+    API:
+      - emit(position, num=6, color=None, lifetime=1.0, radius=None, solid=None, mask_inner=None, mask_outer=None)
+      - update(delta_time)
+      - render()
+
+    Examples:
+      # Default soft, circular particles (the current configuration)
+      particles = Particles(ctx, camera)
+      particles.emit(pos, num=8, color=(1,0,0), radius=1.0)
+
+      # Solid color particles (no soft mask)
+      particles_solid = Particles(ctx, camera, default_solid=True)
+      particles_solid.emit(pos, num=8, color=(0,1,0), radius=1.0)
+
+    You can also toggle per-emission using the `solid` argument to `emit()`.
+    """
+    def __init__(self, ctx, camera, default_solid=False, mask_inner=0.35, mask_outer=0.5, min_alpha=0.25):
+        self.ctx = ctx
+        self.camera = camera
+        self.particles = []
+        # default visual parameters for emissions
+        self.default_solid = bool(default_solid)
+        self.mask_inner = float(mask_inner)
+        self.mask_outer = float(mask_outer)
+        self.min_alpha = float(min_alpha)
+
+    def emit(self, position, num=6, color=None, lifetime=1.0, radius=None, solid=None, mask_inner=None, mask_outer=None, min_alpha=None):
+        """Emit `num` particles around `position`.
+
+        If `radius` is provided, particles spawn uniformly within a sphere of that radius
+        (centered at position + vec3(0,1.0,0)). Color and lifetime are forwarded to
+        `Particle` instances.
+        """
+        color = color or (1.0, 0.5, 0.0)
+        r = radius if radius is not None else 0.25
+
+        def random_point_in_sphere(rval):
+            if rval <= 0.0:
+                return glm.vec3(0.0, 0.0, 0.0)
+            while True:
+                x = random.uniform(-1.0, 1.0)
+                y = random.uniform(-1.0, 1.0)
+                z = random.uniform(-1.0, 1.0)
+                if x * x + y * y + z * z <= 1.0:
+                    return glm.vec3(x, y, z) * rval
+
+        # Choose a particle scale proportional to the emission radius so larger
+        # infection zones don't produce unreasonably large particles.
+        particle_max_scale = max(0.05, min(0.90, r * 0.2))
+        # Resolve per-emission visual overrides or fall back to system defaults
+        solid_mode = self.default_solid if solid is None else bool(solid)
+        inner = mask_inner if mask_inner is not None else self.mask_inner
+        outer = mask_outer if mask_outer is not None else self.mask_outer
+        min_a = min_alpha if min_alpha is not None else self.min_alpha
+
+        for _ in range(num):
+            jitter = random_point_in_sphere(r)
+            p = Particle(
+                self.ctx, self.camera,
+                position + glm.vec3(0, 1.0, 0) + jitter,
+                color=color, lifetime=lifetime,
+                max_scale=particle_max_scale,
+                min_alpha=min_a,
+                solid=solid_mode,
+                mask_inner=inner,
+                mask_outer=outer,
+            )
+            self.particles.append(p)
+
+    def update(self, delta_time):
+        for p in self.particles[:]:
+            p.update(delta_time)
+            if p.is_dead:
+                # shared GL resources are not released per-particle
+                self.particles.remove(p)
+
+    def render(self, alpha_mul: float = 1.0, blend_additive: bool = False):
+        self.ctx.enable(mgl.BLEND)
+        if blend_additive:
+            self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE
+        else:
+            self.ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
+        try:
+            prev_depth_mask = getattr(self.ctx, 'depth_mask', True)
+            self.ctx.depth_mask = False
+        except Exception:
+            prev_depth_mask = None
+
+        if len(self.particles) < 200:
+            sorted_particles = sorted(
+                self.particles,
+                key=lambda p: glm.length2(p.position - self.camera.position),
+                reverse=True
+            )
+        else:
+            sorted_particles = self.particles
+
+        for p in sorted_particles:
+            p.render(alpha_mul=alpha_mul)
+
+        try:
+            if prev_depth_mask is not None:
+                self.ctx.depth_mask = prev_depth_mask
+        except Exception:
+            pass
+
+        self.ctx.disable(mgl.BLEND)
