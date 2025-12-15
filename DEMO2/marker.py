@@ -78,7 +78,8 @@ class Marker:
 
     # --- Mostrar posición actual ---
     def print_position(self):
-        print(f"📍 Posición marcador: x={self.position.x:.2f}, y={self.position.y:.2f}, z={self.position.z:.2f}")
+        #print(f"📍 Posición marcador: x={self.position.x:.2f}, y={self.position.y:.2f}, z={self.position.z:.2f}")
+        print(f"📍 Posición marcador: {self.position.x:.2f}, {self.position.y:.2f}, {self.position.z:.2f}")
 
     # --- Dibujado del marcador ---
     def render(self):

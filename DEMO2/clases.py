@@ -47,6 +47,8 @@ class GraphBuilder:
         self.puertas_coords = []     # coordenadas interiores para conexiones posteriores
         self.puerta_counter = 1      # para IDs 1,2,3...
 
+        self.asientos = []
+
     def _new_id(self):
         """Devuelve un ID con formato pasillo_clase_pisoXXX."""
         id_num = f"{self.pasillo}{self.clase}{self.piso}{self.node_counter:03d}"
@@ -155,6 +157,7 @@ class GraphBuilder:
                 nid = self._new_id()
                 self.pos[nid] = (x, self.pf4[1], z)
                 fila4.append(nid)
+                self.asientos.append(nid)
 
             # FILA DE 3+1 PUNTOS (entre medio y derecha)
             fila3 = []
@@ -164,6 +167,7 @@ class GraphBuilder:
                 nid = self._new_id()
                 self.pos[nid] = (x, self.pf3[1], z)
                 fila3.append(nid)
+                self.asientos.append(nid)
 
             self.filas_ids.append((fila4, fila3))
 
@@ -265,7 +269,7 @@ class GraphBuilder:
             "salida": self.puertas_internas,    
             "pos": self.pos,
             "con": self.con,
-            "asientos": list(self.pos.keys()),
+            "asientos": self.asientos,
         }
 
 
@@ -311,16 +315,16 @@ def dibujar_grafo(pos, con, figsize=(12, 6)):
 # =====================================================================
 if __name__ == "__main__":
     builder = GraphBuilder(
-        punto_izq=(43.05, 0.45, -45.85),   # CAMBIAR
-        punto_med=(43.05, 0.45, -40.50),   # CAMBIAR
-        punto_der=(43.05, 0.45, -36.00),   # CAMBIAR
-        punto_fila_4=(43.55, 0.45, -45.05),   # CAMBIAR
-        punto_fila_3=(43.55, 0.45, -39.65),   # CAMBIAR
+        punto_izq=(69.35, 2.05, -103.80),   # CAMBIAR
+        punto_med=(69.35, 2.05, -98.65),   # CAMBIAR
+        punto_der=(69.35, 2.05, -94.10),   # CAMBIAR
+        punto_fila_4=(67.65, 2.05, -103.20),   # CAMBIAR
+        punto_fila_3=(67.65, 2.05, -97.80),   # CAMBIAR
         dist_columnas=0.725,   
         dist_filas=-1.044,     
-        n_filas=8, # CAMBIAR
-        pasillo=1,  # CAMBIAR
-        clase=1,    # CAMBIAR
+        n_filas=4, # CAMBIAR
+        pasillo=3,  # CAMBIAR
+        clase=5,    # CAMBIAR
         piso=0,
     )
 
@@ -332,7 +336,8 @@ if __name__ == "__main__":
     builder.generar_filas()
 
     builder.agregar_puertas([   # CAMBIAR
-        (46.90, 0.45, -32.85),
+        (62.35, 2.05, -93.25),
+        (70.15, 2.05, -93.25)
     ])
     builder.conectar_puertas(builder.col_der_ids)
 
@@ -341,7 +346,7 @@ if __name__ == "__main__":
     dibujar_grafo(data["pos"], data["con"])
 
     # Guardar JSON
-    with open("DEMO2/data/salas/Q3-0003.json", "w") as f:   # CAMBIAR
+    with open("DEMO2/data/salas/Q3-0009.json", "w") as f:   # CAMBIAR
         json.dump(data, f, indent=4)
 
     print("Grafo generado en grafo_generado.json")

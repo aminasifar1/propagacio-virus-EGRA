@@ -261,6 +261,11 @@ class Virus:
             except Exception:
                 # protect rendering loop from per-rastro errors
                 pass
+            try:
+                rastro.render(light_pos)
+            except Exception:
+                # protect rendering loop from per-rastro errors
+                pass
 
 
 class Rastro:
@@ -324,6 +329,7 @@ class Rastro:
             return -1
         return 0
 
+
     def destroy(self):
         # # release particle GL resources
         # for p in list(self.particles.particles):
@@ -334,7 +340,21 @@ class Rastro:
         # self.particles.particles.clear()
 
         self.particles.particles.clear()
+        # # release particle GL resources
+        # for p in list(self.particles.particles):
+        #     try:
+        #         p.vbo.release(); p.shader.release(); p.vao.release()
+        #     except Exception:
+        #         pass
+        # self.particles.particles.clear()
 
+        self.particles.particles.clear()
+
+    def render(self, light_pos=None):
+        try:
+            self.particles.render()
+        except Exception:
+            pass
     def render(self, light_pos=None):
         try:
             self.particles.render()

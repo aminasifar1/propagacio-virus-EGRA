@@ -487,9 +487,9 @@ class MotorGrafico:
 if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
     DATA_PATH = os.path.join(ROOT_PATH,"DEMO2","data","salas")
-    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni_mala.obj")
+    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","prova.obj")
     PERSON_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","person.obj")
-    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni_mala.mtl")
+    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","prova.mtl")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================
