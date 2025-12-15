@@ -7,7 +7,7 @@ import glm
 import sys
 import time
 import random
-from facultat import Sala, Clase, Pasillo
+from facultat import Sala, Clase, Pasillo, WaypointVisualizer
 from escenario import Escenario
 from camera import Camera
 from person import Person
@@ -260,6 +260,12 @@ class MotorGrafico:
         self.infection_probability = 0.2
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
 
+        # Waypoint Visualizer
+        self.waypoint_visualizer = WaypointVisualizer(self.ctx, self.camera)
+        self.show_waypoints = False
+        for nombre, sala in self.mundo.items():
+            self.waypoint_visualizer.build_from_sala(nombre, sala)
+
         # Escenari
         scene_data, bounding_box, texture_file = load_obj(scene_path)
         self.object = Escenario(self.ctx, self.camera, scene_data, bounding_box, texture_file)
@@ -414,6 +420,9 @@ class MotorGrafico:
                         self.people.clear()
                         self.tiempo_persona = 0.0
                         print("🔄 Simulación reiniciada")
+                    elif e.key == pg.K_g:
+                        self.show_waypoints = not self.show_waypoints
+                        print(f"📍 Mostrar waypoints: {self.show_waypoints}")
                     elif e.key == pg.K_q:
                         # Cámara anterior
                         self.camera.prev_preset()
@@ -467,6 +476,10 @@ class MotorGrafico:
             self.virus.update_particles(self.delta_time * self.speed)
 
             self.virus.render(light_pos)
+
+            # Mostrar grafo de waypoints si está activado
+            if self.show_waypoints:
+                self.waypoint_visualizer.render(self.mundo)
 
             # ==========================
             # Actualitzar persones amb col·lisions
