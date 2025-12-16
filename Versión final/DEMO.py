@@ -7,13 +7,14 @@ import glm
 import sys
 import time
 import random
-from facultat import Sala, Clase, Pasillo
+from facultat import Sala, Clase, Pasillo, WaypointVisualizer
 from escenario import Escenario
 from camera import Camera
 from person import Person
 from marker import Marker
 from virus import Virus
 from infectionbar import InfectionBar
+import menu
 
 # =====================================================
 #                    CARREGAR OBJ
@@ -194,6 +195,21 @@ def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.n
     buffer_data = np.array(vertex_data, dtype='f4')
     return buffer_data, bounding_box, texture_file
 
+def cargar_diccionarios_desde_carpeta(ruta):
+    diccionario_final = {}
+
+    for archivo in os.listdir(ruta):
+        if archivo.endswith(".json"):
+            ruta_archivo = os.path.join(ruta, archivo)
+            with open(ruta_archivo, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    diccionario_final.update(data)
+                else:
+                    print(f"Advertencia: {archivo} no contiene un diccionario válido")
+
+    return diccionario_final
+
 # =====================================================
 #                    MOTOR GRÀFIC
 # =====================================================
@@ -210,6 +226,10 @@ class MotorGrafico:
         self.ctx.front_face = 'ccw'
         self.aspect_ratio = win_size[0] / win_size[1]
         self.speed = 1
+
+        # Multi Vista
+        self.menu_width = 400   # anchura del menú
+        self.menu_surface = pg.Surface((self.menu_width, self.WIN_SIZE[1]), pg.SRCALPHA)
 
         # Camara
         self.camera = Camera(self)
@@ -240,6 +260,12 @@ class MotorGrafico:
         self.infection_probability = 0.2
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
 
+        # Waypoint Visualizer
+        self.waypoint_visualizer = WaypointVisualizer(self.ctx, self.camera)
+        self.show_waypoints = False
+        for nombre, sala in self.mundo.items():
+            self.waypoint_visualizer.build_from_sala(nombre, sala)
+
         # Escenari
         scene_data, bounding_box, texture_file = load_obj(scene_path)
         self.object = Escenario(self.ctx, self.camera, scene_data, bounding_box, texture_file)
@@ -260,7 +286,12 @@ class MotorGrafico:
         self.simulando = False
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
-        self.max_people = 50
+        self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
+        for i in ["Q1-0007","Q1-0013"]:
+            for j in range(50):
+                p = self.create_person([i], i)
+
+        self.people[0].infectar(1)  # Infectem la primera persona
 
         # Creem la primera persona només per obtenir el VAO
         # first_person = Person(self, self.ctx, self.camera, self.p_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
@@ -367,9 +398,13 @@ class MotorGrafico:
             # Gestió d'events
             # ==========================
             for e in pg.event.get():
+                mx, my = pg.mouse.get_pos()
+                if mx < self.menu_width:
+                    menu.handle_menu_event(e)
+                self.camera.handle_mouse(e)
                 if not keys[pg.K_LALT] and not keys[pg.K_RALT]:
                     self.marker.handle_input(keys)
-                self.camera.handle_mouse(e)
+                
                 if e.type == pg.QUIT or (e.type == pg.KEYDOWN and e.key == pg.K_ESCAPE):
                     pg.event.set_grab(False)
                     pg.quit()
@@ -385,6 +420,9 @@ class MotorGrafico:
                         self.people.clear()
                         self.tiempo_persona = 0.0
                         print("🔄 Simulación reiniciada")
+                    elif e.key == pg.K_g:
+                        self.show_waypoints = not self.show_waypoints
+                        print(f"📍 Mostrar waypoints: {self.show_waypoints}")
                     elif e.key == pg.K_q:
                         # Cámara anterior
                         self.camera.prev_preset()
@@ -411,14 +449,14 @@ class MotorGrafico:
             # Spawn de persones
             # ==========================
             if self.simulando:
-                self.tiempo_persona += dt
-                if self.tiempo_persona >= self.intervalo_spawn:
-                    selection = random.choice(rooms)
-                    p = self.create_person([selection])
-                    if clean_rooms[selection] == 0:
-                        self.virus.infectar(p)
-                    clean_rooms[selection] += 1
-                    self.tiempo_persona = 0.0
+                # self.tiempo_persona += dt
+                # if self.tiempo_persona >= self.intervalo_spawn:
+                #     selection = random.choice(rooms)
+                #     p = self.create_person([selection])
+                #     if clean_rooms[selection] == 0:
+                #         self.virus.infectar(p)
+                #     clean_rooms[selection] += 1
+                #     self.tiempo_persona = 0.0
 
                 # Tick virus
                 self.tick_timer += self.delta_time * self.speed
@@ -438,6 +476,10 @@ class MotorGrafico:
             self.virus.update_particles(self.delta_time * self.speed)
 
             self.virus.render(light_pos)
+
+            # Mostrar grafo de waypoints si está activado
+            if self.show_waypoints:
+                self.waypoint_visualizer.render(self.mundo)
 
             # ==========================
             # Actualitzar persones amb col·lisions
@@ -467,6 +509,8 @@ class MotorGrafico:
             if total_people > 0:
                 pass
                 # self.infection_bar.render(self.ui_surface, num_infected, total_people)
+            menu.render_menu(self.menu_surface)
+            self.ui_surface.blit(self.menu_surface, (0,0))
             self._render_ui_overlay()
     
             # ==========================
@@ -489,7 +533,8 @@ if __name__ == "__main__":
     DATA_PATH = os.path.join(ROOT_PATH,"DEMO2","data","salas")
     SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","prova.obj")
     PERSON_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","person.obj")
-    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","prova.mtl")
+    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni_mala.mtl")
+    HORARIS_PATH = os.path.join(ROOT_PATH,"DEMO2","data","horaris")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================

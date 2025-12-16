@@ -37,7 +37,7 @@ class Person:
         if position:
             self.position = position
         else:
-            self.position = self.mundo[self.sala].get_wp(self.mundo[self.sala].salida_id).position
+            self.position = self.mundo[self.sala].get_wp(int(self.mundo[self.sala].salida_id[0])).position
         self.ground_y = ground_y
         self.position.y = self.ground_y
         self.m_model = glm.translate(glm.mat4(1.0), self.position)
@@ -251,7 +251,9 @@ class Person:
             self._cambiar_sala(self.destino_sala)
             self.destino_sala = None; self.camino_actual = []; self.indice_camino = 0
             if isinstance(self.mundo[self.sala], Clase): self.sentado = False
-        else: self.camino_actual = []
+        else: 
+            self.camino_actual = []
+            self.sentado = True
     
     def _cambiar_sala(self, destino):
         if self.sala == destino: return
