@@ -281,7 +281,7 @@ class MotorGrafico:
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
-        for i in ["Q1-0003","Q1-0007","Q1-0013"]:
+        for i in ["Q1-0007","Q1-0013"]:
             for j in range(50):
                 p = self.create_person([i], i)
 
