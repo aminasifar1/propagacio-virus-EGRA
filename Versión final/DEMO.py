@@ -141,7 +141,7 @@ RAW_POINTS = r"""
 	- (escalera principal) 2: 7.70, -0.10, -13.65 - (0,1,3,5
 	- (pasillo izquierda abajo) 3: 10.60, -0.10, -13.65 - (2,6
 	- (pasillo medio abajo) 4: 13.90, -0.10, -13.65 - (3,6
-	- (principio escalera) 5: 7.70, -0.10, -14.80 - (2,
+	- (principio escalera) 5: 7.70, -0.10, -14.80 - (2,39)
 	- (principio primera rampa izquierda) 6: 10.60, -0.10, -18.00 - (3,4,7,8,9)
 	- (principio primera rampa medio) 7: 13.90, -0.10, -18.00 - (3,4,6,8,9)
 	- (final primera rampa izquierda) 8: 10.60, 0.45, -30.10 - (6,7,9,10,12,13)
@@ -167,6 +167,63 @@ RAW_POINTS = r"""
 	- (entrada rampa Q2/0) 28: 10.60, 1.45, -60.00 - (14,15,16,29)
 	- (abajo escaleras Q2) 29: 4.85, 1.45, -60.00 - (28,30)
 	- (inicio escaleras Q2) 30: 4.85, 1.45, -57.20 - (29,
+	- (final Q1/0) 31: 74.30, 0.45, -34.10 - (12,32
+	- (incio escaleras final Q1/0) 32: 76.15, 0.45, -38.95 - (31,
+	- (final Q2/0) 33: 74.30, 1.45, -62.70 - (15,34
+	- (incio escaleras final Q2/0) 34: 76.15, 1.45, -68.15 - (33,
+	- (final Q3/0) 35: 74.30, 2.00, -91.85 - (18,36
+	- (incio escaleras final Q3/0) 36: 76.15, 2.00, -97.70 - (35,
+	- (final Q4/0) 37: 74.30, 2.60, -121.05 - (21,38
+	- (incio escaleras final Q4/0) 38: 76.15, 2.60, -126.80 - (37,
+	- (medio 1 escalera) 39: 7.70, 2.00, -20.70 - (5,40)
+	- (medio 2 escalera) 40: 7.70, 2.00, -23.50 - (39,41)
+	- (final escalera) 41: 7.70, 4.30, -29.90 - (40,42)
+	- (inicio pasillo 1) 42: 10.60, 4.30, -31.25 - (41,43,44)
+	- (inicio Q1/1) 43: 13.90, 4.30, -34.10 - (42
+	- (principio segunda rampa 1) 44: 10.60, 4.30, -46.95 - (44,45)
+	- (final segunda rampa 1) 45: 10.60, 4.85, -58.60 - (44,46,47)
+	- (entrada rampa Q2/1) 46: 10.60, 4.85, -60.00 - (45,47
+	- (inicio Q2/1) 47: 13.90, 4.85, -62.70 - (45,46
+	- (inicio tercera rampa 1) 48: 10.60, 4.85, -76.25 - (46,49
+	- (final tercera rampa 1) 49: 10.60, 5.40, -87.80 - (48,50,51
+	- (entrada rampa Q3/1) 50: 10.60, 5.40, -89.10 - (49,51,52
+	- (inicio Q3/1) 51: 13.90, 5.40, -91.85 - (50,49
+	- (inicio cuarta rampa 1) 52: 10.60, 5.40, -104.30 - (50,53
+	- (final cuarta rama 1) 53: 10.60, 6.05, -117.00 - (52,54,55
+	- (entrada rampa Q4/1) 54:10.60, 6.05, -118.25 - (53,55
+	- (incio Q4/1) 55: 13.90, 6.05, -121.05 - (54,
+	- (final Q1/1) 56: 74.30, 4.30, -34.10 - (43,
+	- (final Q2/1) 57: 74.30, 4.85, -62.70 - (47,
+	- (final Q3/1) 58: 74.30, 5.40, -91.85 - (51,
+	- (final Q4/1) 59: 74.30, 6.05, -121.05 - (55
+	- (medio escaleras Q4) 60: 4.85, 3.25, -53.00 - (61,30)
+	- (medio 1 escaleras Q2) 61: 6.50, 3.25, -52.15 - (60,62)
+	- (medio 2 escaleras Q2) 62: 8.40, 3.25, -52.95 - (61,63)
+	- (final escaleras Q2) 63: 8.40, 4.85, -58.05 - (62,46)
+	- (final escaleras Q3) 64: 8.40, 5.45, -87.25 - (50,65)
+	- (medio 2 escaleras Q3) 65: 8.40, 3.80, -82.10 - (64,66)
+	- (medio 1 escaleras Q3) 66: 6.50, 3.80, -81.40 - (65,67)
+	- (medio escaleras Q3) 67: 4.85, 3.80, -82.10 - (66,27)
+	- (medio escaleras Q4) 68: 4.85, 4.45, -111.30 - (24,69)
+	- (medio 1 escaleras Q4) 69: 6.50, 4.45, -110.350 - (68,70)
+	- (medio 2 escaleras Q4) 70: 8.40, 4.45, -111.30 - (69,71)
+	- (final escaleras Q4) 71: 8.40, 6.05, -116.45 - (70,54)
+	- (medio escaleras final Q1) 72: 76.15, 2.65, -44.30 - (73,32)
+	- (medio 1 escaleras final Q1) 73: 75.15, 2.65, -44.80 - (72,74)
+	- (medio 2 escaleras final Q1) 74: 74.15, 2.65, -44.30 - (73,75)
+	- (final escaleras final Q1) 75: 74.15, 4.30, -39.15 - (74,56)
+	- (final escaleras final Q2) 76: 74.15, 4.85, -67.45 - (77,57)
+	- (medio 2 escaleras final Q2) 77: 74.15, 3.20, -72.60 - (76,78)
+	- (medio 1 escaleras final Q2) 78: 75.15, 3.20, -73.10 - (77,79)
+	- (medio escaleras final Q2) 79: 76.15, 3.20, -72.60 - (78,34)
+	- (final escaleras final Q3) 80: 74.15, 5.40, -96.95 - (81,58)
+	- (medio 2 escaleras final Q3) 81: 74.15, 3.75, -102.10 - (80,82)
+	- (medio 1 escaleras final Q3) 82: 75.15, 3.75, -102.60 - (81,83)
+	- (medio escaleras final Q3) 83: 76.15, 3.75, -102.10 - (82,36)
+	- (medio escaleras final Q4) 84: 76.15, 4.40, -131.25 - (85,38)
+	- (medio 1 escaleras final Q4) 85: 75.15, 4.40, -131.75 - (84,86)
+	- (medio 2 escaleras final Q4) 86: 74.15, 4.40, -131.25 - (85,87)
+	- (final escaleras final Q4) 87: 74.15, 6.10, -126.15 - (86,59)
     """
 
 nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
@@ -442,11 +499,11 @@ class MotorGrafico:
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
-        for i in ["Q1-0007","Q1-0013"]:
-            for j in range(50):
-                p = self.create_person([i], i)
+        # for i in ["Q1-0007","Q1-0013"]:
+        #     for j in range(50):
+        #         p = self.create_person([i], i)
 
-        self.people[0].infectar(1)  # Infectem la primera persona
+        # self.people[0].infectar(1)  # Infectem la primera persona
 
         # Creem la primera persona només per obtenir el VAO
         # first_person = Person(self, self.ctx, self.camera, self.p_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
@@ -695,11 +752,11 @@ class MotorGrafico:
 # =====================================================
 if __name__ == "__main__":
     ROOT_PATH = os.getcwd()
-    DATA_PATH = os.path.join(ROOT_PATH,"DEMO2","data","salas")
-    SCENE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","prova.obj")
-    PERSON_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","person.obj")
-    TEXURE_PATH = os.path.join(ROOT_PATH,"DEMO2","Models","uni_mala.mtl")
-    HORARIS_PATH = os.path.join(ROOT_PATH,"DEMO2","data","horaris")
+    DATA_PATH = os.path.join(ROOT_PATH,"Versión final","data","salas")
+    SCENE_PATH = os.path.join(ROOT_PATH,"Versión final","Models","DEF.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH,"Versión final","Models","person.obj")
+    TEXURE_PATH = os.path.join(ROOT_PATH,"Versión final","Models","DEF.mtl")
+    HORARIS_PATH = os.path.join(ROOT_PATH,"Versión final","data","horaris")
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================
