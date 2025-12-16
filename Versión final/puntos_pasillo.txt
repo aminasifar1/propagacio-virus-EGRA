@@ -1,0 +1,38 @@
+- Spawn points:
+	- 1: -26.55, -0.15, -17.65
+	- 2: -26.55, -0.15, -46.85
+	- 3: 3.35, -0.15, -46.85
+- Puerta Facu:
+	- Fuera: -0.50, -0.10, -18.70
+	- Dentro: -0.50, -0.10, -15.15
+- Puntos facu:
+	- (pitagoras) 1: 4.90, -0.10, -15.15 - (0,2,
+	- (escalera principal) 2: 7.70, -0.10, -13.65 - (0,1,3,5
+	- (pasillo izquierda abajo) 3: 10.60, -0.10, -13.65 - (2,6
+	- (pasillo medio abajo) 4: 13.90, -0.10, -13.65 - (3,6
+	- (principio escalera) 5: 7.70, -0.10, -14.80 - (2,
+	- (principio primera rampa izquierda) 6: 10.60, -0.10, -18.00 - (3,4,7,8,9)
+	- (principio primera rampa medio) 7: 13.90, -0.10, -18.00 - (3,4,6,8,9)
+	- (final primera rampa izquierda) 8: 10.60, 0.45, -30.10 - (6,7,9,10,12,13)
+	- (final primera rampa medio) 9: 13.90, 0.45, -30.10 - (6,7,8,10,12)
+	- (final pitagoras) 10: 10.60, 0.45, -31.25 - (8,9,11,13,12)
+	- (elbow pitagoras) 11: 4.90, 0.45, -31.25 - (1,10)
+	- (inicio Q1/0) 12: 13.90, 0.45, -34.10 - (10,9,8,
+	- (principio segunda rampa) 13: 13.90, 0.45, -46.95 - (10,8,12,14)
+	- (final segunda rampa) 14: 13.90, 1.45, -58.75 - (13,15
+	- (inicio Q2/0) 15: 13.90, 1.45, -62.70 - (14,16
+	- (inicio tercera rampa) 16: 13.90, 1.45, -76.10 - (15,17,
+	- (final tercera rampa) 17: 13.90, 2.00, -87.85 - (16,18,
+	- (inicio Q3/0) 18: 13.90, 2.00, -91.85 - (17,19,
+	- (inicio cuarta rampa) 19: 13.90, 2.00, -104.20 - (18,20
+	- (final cuarta rampa) 20: 13.90, 2.60, -117.00 - (19,21
+	- (incio Q4/0) 21: 13.90, 2.60, -121.05 - (20,22
+	- (entrada rampa Q4/0) 22: 10.60, 2.60, -118.25 - (20,21,23)
+	- (abajo escaleras Q4) 23: 4.85, 2.60, -118.25 - (22,24)
+	- (inicio escaleras Q4) 24: 4.85, 2.60, -115.50 - (23,
+	- (entrada rampa Q3/0) 25: 10.60, 2.00, -89.10 - (17,18,19,26)
+	- (abajo escaleras Q3) 26: 4.85, 2.00, -89.10 - (25,27)
+	- (inicio escaleras Q3) 27: 4.85, 2.00, -86.20 - (26,
+	- (entrada rampa Q2/0) 28: 10.60, 1.45, -60.00 - (14,15,16,29)
+	- (abajo escaleras Q2) 29: 4.85, 1.45, -60.00 - (28,30)
+	- (inicio escaleras Q2) 30: 4.85, 1.45, -57.20 - (29,

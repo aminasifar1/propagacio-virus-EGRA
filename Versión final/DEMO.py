@@ -17,6 +17,161 @@ from infectionbar import InfectionBar
 import menu
 
 # =====================================================
+#                   GRAFO PUNTOS
+# =====================================================
+
+import re
+
+def parse_graph_from_text(raw: str):
+    nodes = {}
+    adj = {}
+
+    id_re = re.compile(r"\)\s*(\d+)\s*:")
+    coord_re = re.compile(r":\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*-\s*\(([^)]*)\)?")
+
+    for raw_line in raw.splitlines():
+        line = raw_line.strip()
+        if not line or ":" not in line:
+            continue
+
+        m_id = id_re.search(line)
+        m_c = coord_re.search(line)
+        if not (m_id and m_c):
+            continue
+
+        node_id = int(m_id.group(1))
+        x, y, z = map(float, m_c.group(1, 2, 3))
+        nei_txt = m_c.group(4).strip()
+
+        nodes[node_id] = (x, y, z)
+        adj.setdefault(node_id, set())
+
+        for t in nei_txt.split(","):
+            t = t.strip()
+            if t.isdigit():
+                nb = int(t)
+                adj[node_id].add(nb)
+                adj.setdefault(nb, set()).add(node_id)
+
+    edges = set()
+    for u, nbs in adj.items():
+        for v in nbs:
+            if u != v:
+                edges.add((min(u, v), max(u, v)))
+
+    return nodes, edges, adj
+
+GRAPH_VERT = """
+#version 330
+in vec3 in_pos;
+uniform mat4 mvp;
+uniform float point_size;
+void main() {
+    gl_Position = mvp * vec4(in_pos, 1.0);
+    gl_PointSize = point_size;   // para puntos
+}
+"""
+
+GRAPH_FRAG = """
+#version 330
+uniform vec3 color;
+out vec4 fragColor;
+void main() {
+    fragColor = vec4(color, 1.0);
+}
+"""
+
+def build_graph_drawables(ctx: mgl.Context, nodes: dict, edges: set):
+    # ---- buffers de posiciones ----
+    pts = np.array([nodes[i] for i in sorted(nodes.keys())], dtype="f4")
+
+    segs = []
+    for u, v in sorted(edges):
+        if u in nodes and v in nodes:
+            segs.append(nodes[u])
+            segs.append(nodes[v])
+    segs = np.array(segs, dtype="f4")
+
+    prog = ctx.program(vertex_shader=GRAPH_VERT, fragment_shader=GRAPH_FRAG)
+
+    vbo_pts = ctx.buffer(pts.tobytes())
+    vao_pts = ctx.vertex_array(prog, [(vbo_pts, "3f", "in_pos")])
+
+    vbo_lines = ctx.buffer(segs.tobytes())
+    vao_lines = ctx.vertex_array(prog, [(vbo_lines, "3f", "in_pos")])
+
+    return {
+        "prog": prog,
+        "vao_pts": vao_pts,
+        "vao_lines": vao_lines,
+        "n_points": len(pts),
+        "n_line_verts": len(segs),
+    }
+
+def render_graph(ctx: mgl.Context, graph, mvp: np.ndarray,
+                 point_size=10.0,
+                 color_points=(1.0, 0.2, 0.2),
+                 color_lines=(0.2, 0.8, 1.0),
+                 overlay=False):
+
+    prog = graph["prog"]
+    prog["mvp"].write(mvp.astype("f4").tobytes())
+    prog["point_size"].value = float(point_size)
+
+    # Para que gl_PointSize funcione en core profile:
+    ctx.enable(mgl.PROGRAM_POINT_SIZE)
+
+    if overlay:
+        # siempre visible (sin oclusión)
+        ctx.disable(mgl.DEPTH_TEST)
+
+    # Líneas
+    prog["color"].value = color_lines
+    graph["vao_lines"].render(mode=mgl.LINES, vertices=graph["n_line_verts"])
+
+    # Puntos
+    prog["color"].value = color_points
+    graph["vao_pts"].render(mode=mgl.POINTS, vertices=graph["n_points"])
+
+    if overlay:
+        ctx.enable(mgl.DEPTH_TEST)
+
+RAW_POINTS = r"""
+	- (pitagoras) 1: 4.90, -0.10, -15.15 - (0,2,
+	- (escalera principal) 2: 7.70, -0.10, -13.65 - (0,1,3,5
+	- (pasillo izquierda abajo) 3: 10.60, -0.10, -13.65 - (2,6
+	- (pasillo medio abajo) 4: 13.90, -0.10, -13.65 - (3,6
+	- (principio escalera) 5: 7.70, -0.10, -14.80 - (2,
+	- (principio primera rampa izquierda) 6: 10.60, -0.10, -18.00 - (3,4,7,8,9)
+	- (principio primera rampa medio) 7: 13.90, -0.10, -18.00 - (3,4,6,8,9)
+	- (final primera rampa izquierda) 8: 10.60, 0.45, -30.10 - (6,7,9,10,12,13)
+	- (final primera rampa medio) 9: 13.90, 0.45, -30.10 - (6,7,8,10,12)
+	- (final pitagoras) 10: 10.60, 0.45, -31.25 - (8,9,11,13,12)
+	- (elbow pitagoras) 11: 4.90, 0.45, -31.25 - (1,10)
+	- (inicio Q1/0) 12: 13.90, 0.45, -34.10 - (10,9,8,
+	- (principio segunda rampa) 13: 13.90, 0.45, -46.95 - (10,8,12,14)
+	- (final segunda rampa) 14: 13.90, 1.45, -58.75 - (13,15
+	- (inicio Q2/0) 15: 13.90, 1.45, -62.70 - (14,16
+	- (inicio tercera rampa) 16: 13.90, 1.45, -76.10 - (15,17,
+	- (final tercera rampa) 17: 13.90, 2.00, -87.85 - (16,18,
+	- (inicio Q3/0) 18: 13.90, 2.00, -91.85 - (17,19,
+	- (inicio cuarta rampa) 19: 13.90, 2.00, -104.20 - (18,20
+	- (final cuarta rampa) 20: 13.90, 2.60, -117.00 - (19,21
+	- (incio Q4/0) 21: 13.90, 2.60, -121.05 - (20,22
+	- (entrada rampa Q4/0) 22: 10.60, 2.60, -118.25 - (20,21,23)
+	- (abajo escaleras Q4) 23: 4.85, 2.60, -118.25 - (22,24)
+	- (inicio escaleras Q4) 24: 4.85, 2.60, -115.50 - (23,
+	- (entrada rampa Q3/0) 25: 10.60, 2.00, -89.10 - (17,18,19,26)
+	- (abajo escaleras Q3) 26: 4.85, 2.00, -89.10 - (25,27)
+	- (inicio escaleras Q3) 27: 4.85, 2.00, -86.20 - (26,
+	- (entrada rampa Q2/0) 28: 10.60, 1.45, -60.00 - (14,15,16,29)
+	- (abajo escaleras Q2) 29: 4.85, 1.45, -60.00 - (28,30)
+	- (inicio escaleras Q2) 30: 4.85, 1.45, -57.20 - (29,
+    """
+
+nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
+
+# =====================================================
 #                    CARREGAR OBJ
 # =====================================================
 def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3], str]:
@@ -307,6 +462,8 @@ class MotorGrafico:
         min_coords, max_coords = self.object.bounding_box
         print(f"Escenari carregat. Bounding Box: MIN {min_coords}, MAX {max_coords}")
 
+        self.graph = build_graph_drawables(self.ctx, nodes, edges)
+
     # Crear persona
     def create_person(self, schedule=[], spawn='pasillo'):
         # persona = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
@@ -512,6 +669,14 @@ class MotorGrafico:
             menu.render_menu(self.menu_surface)
             self.ui_surface.blit(self.menu_surface, (0,0))
             self._render_ui_overlay()
+
+            render_graph(
+                self.ctx,
+                self.graph,
+                np.array(self.camera.m_proj * self.camera.m_view, dtype="f4").T,
+                point_size=12.0,
+                overlay=False
+            )
     
             # ==========================
             # FPS
