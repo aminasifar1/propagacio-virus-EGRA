@@ -15,6 +15,7 @@ from marker import Marker
 from virus import Virus
 from infectionbar import InfectionBar
 import menu
+from simclock import SimClock
 
 # =====================================================
 #                   GRAFO PUNTOS
@@ -224,9 +225,11 @@ RAW_POINTS = r"""
 	- (medio 1 escaleras final Q4) 85: 75.15, 4.40, -131.75 - (84,86)
 	- (medio 2 escaleras final Q4) 86: 74.15, 4.40, -131.25 - (85,87)
 	- (final escaleras final Q4) 87: 74.15, 6.10, -126.15 - (86,59)
+	- (principio pasillo Q5) 88: 20,20,10 - (2,
     """
 
 nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
+print("nodes:",nodes)
 
 # =====================================================
 #                    CARREGAR OBJ
@@ -465,8 +468,12 @@ class MotorGrafico:
 
         self.show_bboxes = False
 
+        # SimClock (tiempo del mundo)
+        self.day_sim_seconds = 20 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
+        self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
+
         # Virus
-        self.tick_duration = 0.2
+        self.tick_duration = 60
         self.tick_timer = 0.0
         self.tick_global = 0  # --- Contador global de ticks ---
         self.infection_probability = 0.2
