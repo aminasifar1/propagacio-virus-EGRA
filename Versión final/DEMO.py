@@ -16,6 +16,8 @@ from virus import Virus
 from infectionbar import InfectionBar
 import menu
 from simclock import SimClock
+from scheduler import SimCalendar
+
 
 # =====================================================
 #                   GRAFO PUNTOS
@@ -532,10 +534,11 @@ class MotorGrafico:
         self.show_bboxes = False
 
         # SimClock (tiempo del mundo)
-        self.day_sim_seconds = 20 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
+        self.day_sim_seconds = 5 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
         self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
         self.exposure_scale = 1.0       # pasillo por defecto
         self.class_exposure_scale = 6.0 # ejemplo: 20 min sim = 120 min real -> 6x
+        self.calendar = SimCalendar(slot_sim_minutes=5, start_weekday=0)
 
         # Virus
         self.tick_duration = 1
@@ -572,7 +575,7 @@ class MotorGrafico:
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
         for i in ["Q1-0007","Q1-0013"]:
-            for j in range(50):
+            for j in range(20):
                 p = self.create_person([i], i)
 
         self.people[0].infectar(1)  # Infectem la primera persona
@@ -594,12 +597,24 @@ class MotorGrafico:
         self.graph = build_graph_drawables(self.ctx, nodes, edges)
 
     # Crear persona
-    def create_person(self, schedule=[], spawn='pasillo'):
+    def create_person(self, schedule=[], spawn='pasillo', grupo=None):
         # persona = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
-        persona = Person(self, self.ctx, self.camera, self.p_data, self.mundo, schedule, spawn)
+        persona = Person(self, self.ctx, self.camera, self.p_data, self.mundo, schedule, spawn, group=grupo)
         persona.infection_tick = None  # --- Manté el tick d’infecció ---
         self.people.append(persona)
         return persona
+    
+    def get_active_and_next(self, day_sessions, slot_now):
+        active = None
+        next_sess = None
+        for s in day_sessions:
+            if s["start_slot"] <= slot_now < s["end_slot"]:
+                active = s
+                break
+            if s["start_slot"] > slot_now:
+                next_sess = s
+                break
+        return active, next_sess
 
     # UI overlay
     def _render_ui_overlay(self):
@@ -676,6 +691,9 @@ class MotorGrafico:
 
             dt_sim = dt_wall * self.speed
 
+            if self.simulando:
+                self.calendar.step(dt_sim)
+
             dt_real_eq = dt_sim * self.exposure_scale
 
             keys = pg.key.get_pressed()
@@ -737,6 +755,14 @@ class MotorGrafico:
             # Spawn de persones
             # ==========================
             if self.simulando:
+                day_key = self.calendar.weekday_key()
+                slot_now = self.calendar.current_slot()
+                sesions = {}
+
+                for g in self.people_type:
+                    day_sessions = self.people_type[g][day_key]
+                    sesions[g] = self.get_active_and_next(day_sessions, slot_now)
+
                 # self.tiempo_persona += dt
                 # if self.tiempo_persona >= self.intervalo_spawn:
                 #     selection = random.choice(rooms)
@@ -775,7 +801,7 @@ class MotorGrafico:
             for p in self.people:
                 if self.simulando:
                     # old_pos = glm.vec3(p.position)  # guardem posició antiga
-                    p.update(dt_sim)
+                    # p.update(dt_sim)
                     # # Comprovem col·lisions amb altres persones
                     # for other in self.people:
                     #     if other is p: continue
@@ -784,6 +810,33 @@ class MotorGrafico:
                     #         p.position = old_pos
                     #         p.m_model = glm.translate(glm.mat4(1.0), old_pos)
                     #         break
+                    group = getattr(p, "group_id", None)
+                    if not group: 
+                        p.update(dt_sim)  
+                    else:
+                        # asegúrate que está ordenada una vez al cargar (mejor)
+                        active, next_sess = sesions[group]
+
+                        # 1) si hay clase activa, fuerza objetivo a esa clase (si no está ya)
+                        if active:
+                            p.preclass_plan = None  # ya no aplica
+                            p.schedule = [active["room"]]  # o método "go_to_room"
+                        else:
+                            # 2) si no hay clase: ejecutar plan si toca
+                            started = p.maybe_execute_preclass_plan(self.calendar)
+
+                            # 3) si no hay plan y la próxima empieza en el siguiente slot, planificar
+                            if (not started) and (p.preclass_plan is None) and next_sess and (slot_now + 1 == next_sess["start_slot"]):
+                                # aquí deberías asegurarte de que p está "libre" (no en clase)
+                                # según tu estado actual, lo más simple: si no active, asumimos libre
+                                p.plan_preclass_departure(self.calendar, next_sess["room"])
+
+                            # 4) si no hay nada, wander
+                            if (p.preclass_plan is None) and (not next_sess):
+                                # no quedan clases: ir salida / wander
+                                p.schedule = ["pasillo"]  # o salida
+
+                        p.update(dt_sim)
                 # Render de la persona
                 # p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
                 p.render(self.person_shader, self.person_vao_tri, self.person_vao_line, light_pos, self.person_texture)
@@ -844,7 +897,9 @@ if __name__ == "__main__":
         with open(ruta,"r",encoding="utf-8") as f:
             data = json.load(f)
         tipo = data.get("tipo")
-        if tipo=="clase": sala = Clase.from_json_struct(data)
+        if tipo=="clase": 
+            print(data.get("id"))
+            sala = Clase.from_json_struct(data)
         elif tipo=="pasillo": sala = Pasillo.from_json_struct(data)
         else: sala = Sala.from_json_struct(data)
         facultad[nombre] = sala

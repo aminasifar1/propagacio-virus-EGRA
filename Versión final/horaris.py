@@ -61,7 +61,7 @@ def build_schedule_from_csv(
     return out
 
 if __name__ == "__main__":
-    data = build_schedule_from_csv(os.path.join(os.getcwd(),"Versión final","horaris_ejemplo.csv"), slot_minutes=30, day_start="08:00", travel_lead_slots=1)
+    data = build_schedule_from_csv(os.path.join(os.getcwd(),"Versión final","Horarios.csv"), slot_minutes=30, day_start="08:00", travel_lead_slots=1)
     with open("horaris_generated.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     print("✅ Generado: horaris_generated.json")

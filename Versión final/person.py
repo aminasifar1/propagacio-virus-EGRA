@@ -14,7 +14,7 @@ from animacion import PuffSystem
 
 
 class Person:
-    def __init__(self, motor, ctx, camera, vertex_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, position=None):
+    def __init__(self, motor, ctx, camera, vertex_data, facultad, schedule=None, sala='pasillo', ground_y=0.1, position=None, group=None):
         self.ctx = ctx
         self.camera = camera
 
@@ -27,6 +27,7 @@ class Person:
         self.ring = None
         self.puff = PuffSystem(self.ctx, self.camera)
         self.motor = motor
+        self.group_id = group
 
         # Personalizacion
         self.height = min(max(np.random.normal(1.75, 0.1), 1.6), 1.9)
@@ -37,7 +38,20 @@ class Person:
         if position:
             self.position = position
         else:
-            self.position = self.mundo[self.sala].get_wp(int(self.mundo[self.sala].salida_id[0])).position
+            p0 = glm.vec3(-26.55, -0.15, -17.65)
+            p1 = glm.vec3(-26.55, -0.15, -46.85)
+            p2 = glm.vec3(3.35, -0.15, -46.85)
+            L01 = glm.length(p1 - p0)
+            L12 = glm.length(p2 - p1)
+            L = L01 + L12
+            if L == 0:
+                return glm.vec3(p0)
+
+            r = random.random() * L
+            a, b = (p0, p1) if r < L01 else (p1, p2)
+            t = random.random()
+            self.position = a + t * (b - a)
+            
         self.m_model = glm.translate(glm.mat4(1.0), self.position)
 
         self.rotation_angle = 0.0
@@ -212,6 +226,40 @@ class Person:
 
         self.pos_inicial = glm.vec3(self.m_model[3].x, self.m_model[3].y, self.m_model[3].z)
         self.pos_final = glm.vec3(destino)
+
+    def plan_preclass_departure(self, calendar, next_room):
+        # calendar.t_day es segundos desde 08:00 dentro del día
+        slot_sim_sec = calendar.slot_sim_seconds
+
+        u_real_min = random.uniform(0.0, 30.0)
+        delay_sim = (u_real_min / 30.0) * slot_sim_sec
+
+        self.preclass_plan = {
+            "target_room": next_room,
+            "go_time": calendar.t_day + delay_sim,
+            "weekday": calendar.weekday_key(),
+            "slot": calendar.current_slot(),
+        }
+
+    def maybe_execute_preclass_plan(self, calendar):
+        if not self.preclass_plan:
+            return False
+
+        # invalidar si cambió de día/slot (por seguridad)
+        if self.preclass_plan["weekday"] != calendar.weekday_key():
+            self.preclass_plan = None
+            return False
+
+        if calendar.t_day >= self.preclass_plan["go_time"]:
+            room = self.preclass_plan["target_room"]
+            self.preclass_plan = None
+
+            # Aquí disparas tu lógica existente para ir a un destino:
+            # por ejemplo, ajustar schedule/objetivo
+            self.schedule = [room]
+            return True
+
+        return False
 
     def actualizar_movimiento(self, delta_time):
         if not self.en_movimiento:
