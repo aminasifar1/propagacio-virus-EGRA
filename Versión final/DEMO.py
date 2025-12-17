@@ -250,6 +250,19 @@ RAW_POINTS = r"""
 	- (final escales q5/1) 110: 150.65, 4.30, -51.00 - (109,111)
 	- (inici escales q5/1) 111: 150.65, 4.30, -44.85 - (110,101)
 	- (final Q5/2) 112: 148.40, 7.80, -44.85 - (104,
+    - (inicio escaleras derecha Q5/2) 113: 90.40, 7.80, -45.00 - (104,114)
+	- (escaleras derecha Q5/2 2do punto) 114: 90.40, 7.80, -50.20 - (113,115)
+	- (escaleras derecha Q5/2 3er punto) 115: 90.40, 6.10, -55.05 - (114,116)
+	- (escaleras derecha Q5/2 4to punto) 116: 90.85, 6.10, -55.80 - (115,117)
+	- (escaleras derecha Q5/2 5to punto) 117: 90.85, 6.10, -55.35 - (116,118)
+	- (escaleras derecha Q5/2 6to punto) 118: 92.20, 6.10, -55.35 - (117,119)
+	- (final escaleras derecha Q5/2 abajo) 119: 92.20, 4.40, -51.10 - (118,102)
+	- (inicio escaleras derecha Q2/1) 120: 90.30, 4.35, -49.95 - (102,121)
+	- (escaleras derecha Q2/1 2do punto) 121: 90.30, 2.70, -55.10 - (120,122)
+	- (escaleras derecha Q2/1 3er punto) 122: 90.75, 2.70, -55.80 - (121,123)
+	- (escaleras derecha Q2/1 4to punto) 123: 91.85, 2.70, -55.80 - (122,124)
+	- (escaleras derecha Q2/1 5to punto) 124: 92.30, 2.70, -55.05 - (123,125)
+	- (final escaleras derecha Q2/1) 125: 92.30, 0.90, -51.00 - (124,103)
     """
 
 nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
