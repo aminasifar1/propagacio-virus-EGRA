@@ -163,7 +163,7 @@ RAW_POINTS = r"""
 	- (abajo escaleras Q4) 23: 4.85, 2.60, -118.25 - (22,24)
 	- (inicio escaleras Q4) 24: 4.85, 2.60, -115.50 - (23,
 	- (entrada rampa Q3/0) 25: 10.60, 2.00, -89.10 - (17,18,19,26)
-	- (abajo escaleras Q3) 26: 4.85, 2.00, -89.10 - (25,27)
+	- (abajo escaleras Q3) 26   : 4.85, 2.00, -89.10 - (25,27)
 	- (inicio escaleras Q3) 27: 4.85, 2.00, -86.20 - (26,
 	- (entrada rampa Q2/0) 28: 10.60, 1.45, -60.00 - (14,15,16,29)
 	- (abajo escaleras Q2) 29: 4.85, 1.45, -60.00 - (28,30)
@@ -225,8 +225,7 @@ RAW_POINTS = r"""
 	- (medio 1 escaleras final Q4) 85: 75.15, 4.40, -131.75 - (84,86)
 	- (medio 2 escaleras final Q4) 86: 74.15, 4.40, -131.25 - (85,87)
 	- (final escaleras final Q4) 87: 74.15, 6.10, -126.15 - (86,59)
-	- (pasillo 1 despues del punto final Q1) 88: 74.30, 4.40, -34.10 - (56,89)
-	- (inicio pasillo para Q5-Q6) 89: 79.05, 4.40, -34.10 - (88,90)
+	- (inicio pasillo para Q5-Q6) 89: 79.05, 4.30, -34.10 - (56,90)
 	- (punto entrada pasillo Q5) 90: 79.05, 4.40, -44.70 - (89,91)
 	- (punto pasillo Q5-Q6 1a rampa inicio) 91: 79.05, 4.40, -47.90 - (90,92)
 	- (punto pasillo Q5-Q6 1a rampa fin) 92: 79.05, 5.00, -58.45 - (91,93)
@@ -254,7 +253,7 @@ RAW_POINTS = r"""
 	- (escaleras derecha Q5/2 2do punto) 114: 90.40, 7.80, -50.20 - (113,115)
 	- (escaleras derecha Q5/2 3er punto) 115: 90.40, 6.10, -55.05 - (114,116)
 	- (escaleras derecha Q5/2 4to punto) 116: 90.85, 6.10, -55.80 - (115,117)
-	- (escaleras derecha Q5/2 5to punto) 117: 90.85, 6.10, -55.35 - (116,118)
+	- (escaleras derecha Q5/2 5to punto) 117: 91.65, 6.10, -55.80 - (116,118)
 	- (escaleras derecha Q5/2 6to punto) 118: 92.20, 6.10, -55.35 - (117,119)
 	- (final escaleras derecha Q5/2 abajo) 119: 92.20, 4.40, -51.10 - (118,102)
 	- (inicio escaleras derecha Q2/1) 120: 90.30, 4.35, -49.95 - (102,121)
