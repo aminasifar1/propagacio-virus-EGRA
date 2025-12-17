@@ -219,8 +219,7 @@ class GraphBuilder:
         for (x, y, z) in lista_puertas:
 
             # ---------- PUNTO EXTERIOR ----------
-            id_exterior = str(self.puerta_counter)
-            self.puerta_counter += 1
+            id_exterior = self._new_id()
             pos_exterior = (x, y, z + 0.8)
 
             self.pos[id_exterior] = pos_exterior
@@ -346,7 +345,7 @@ if __name__ == "__main__":
     dibujar_grafo(data["pos"], data["con"])
 
     # Guardar JSON
-    with open("Versión Final/data/salas/Q1-0007.json", "w") as f:   # CAMBIAR
+    with open("Versión Final/data/salas/prueba.json", "w") as f:   # CAMBIAR
         json.dump(data, f, indent=4)
 
     print("Grafo generado en grafo_generado.json")

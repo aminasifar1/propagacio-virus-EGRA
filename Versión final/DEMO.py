@@ -139,7 +139,59 @@ def render_graph(ctx: mgl.Context, graph, mvp: np.ndarray,
     if overlay:
         ctx.enable(mgl.DEPTH_TEST)
 
+import json
+
+def export_pasillo_json_keep_ids(nodes, adj, out_path, *, sala_id=0, salida=666, alpha=2.0):
+    """
+    Exporta a un JSON con la estructura que has mostrado, manteniendo los IDs originales:
+
+    {
+      "id": <int>,
+      "tipo": "pasillo",
+      "entrada": null,
+      "salida": 666,
+      "pos": { "<id>": [x,y,z], ... },
+      "con": { "<id>": ["<id_nb>", ...], ... },
+      "rutas": {},
+      "alpha": 2.0
+    }
+    """
+
+    node_ids = sorted(nodes.keys())
+
+    # pos: "<id>" -> [x,y,z]
+    pos = {
+        str(nid): [float(nodes[nid][0]), float(nodes[nid][1]), float(nodes[nid][2])]
+        for nid in node_ids
+    }
+
+    # con: "<id>" -> ["<id_nb1>", ...] (solo vecinos existentes)
+    con = {}
+    for u in node_ids:
+        nbs = []
+        for v in adj.get(u, []):
+            if v in nodes:  # filtrar ids no definidos (p.ej. 0 si no existe)
+                nbs.append(str(v))
+        con[str(u)] = sorted(nbs, key=lambda s: int(s))
+
+    data = {
+        "id": int(sala_id),
+        "tipo": "pasillo",
+        "entrada": None,
+        "salida": int(salida),   # <- nodo 666 como salida (aunque no exista como waypoint)
+        "pos": pos,
+        "con": con,
+        "rutas": {},
+        "alpha": float(alpha),
+    }
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+    return data
+
 RAW_POINTS = r"""
+	- (puerta) 0: -0.50, -0.10, -15.15 - (1,2,666
 	- (pitagoras) 1: 4.90, -0.10, -15.15 - (0,2,
 	- (escalera principal) 2: 7.70, -0.10, -13.65 - (0,1,3,5
 	- (pasillo izquierda abajo) 3: 10.60, -0.10, -13.65 - (2,6
@@ -182,7 +234,7 @@ RAW_POINTS = r"""
 	- (medio 2 escalera) 40: 7.70, 2.00, -23.50 - (39,41)
 	- (final escalera) 41: 7.70, 4.30, -29.90 - (40,42)
 	- (inicio pasillo 1) 42: 10.60, 4.30, -31.25 - (41,43,44)
-	- (inicio Q1/1) 43: 13.90, 4.30, -34.10 - (42,
+	- (inicio Q1/1) 43: 13.90, 4.30, -34.10 - (42
 	- (principio segunda rampa 1) 44: 10.60, 4.30, -46.95 - (44,45)
 	- (final segunda rampa 1) 45: 10.60, 4.85, -58.60 - (44,46,47)
 	- (entrada rampa Q2/1) 46: 10.60, 4.85, -60.00 - (45,47
@@ -198,7 +250,7 @@ RAW_POINTS = r"""
 	- (final Q1/1) 56: 74.30, 4.30, -34.10 - (43,
 	- (final Q2/1) 57: 74.30, 4.85, -62.70 - (47,
 	- (final Q3/1) 58: 74.30, 5.40, -91.85 - (51,
-	- (final Q4/1) 59: 74.30, 6.05, -121.05 - (55,
+	- (final Q4/1) 59: 74.30, 6.05, -121.05 - (55
 	- (medio escaleras Q4) 60: 4.85, 3.25, -53.00 - (61,30)
 	- (medio 1 escaleras Q2) 61: 6.50, 3.25, -52.15 - (60,62)
 	- (medio 2 escaleras Q2) 62: 8.40, 3.25, -52.95 - (61,63)
@@ -289,10 +341,11 @@ RAW_POINTS = r"""
 	- (escaleras izquierda Q6/2 4to punto) 148: 150.05, 7.05, -95.35 - (147,149)
 	- (escaleras izquierda Q6/2 5to punto) 149: 150.65, 7.05, -94.25 - (148,150)
 	- (final escaleras izquierda Q6/1) 150: 150.65, 5.25, -90.50 - (149,129)
+	- (salida) 666: -0.50, -0.10, -18.70 - (0)
     """
 
 nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
-print("nodes:",nodes)
+export_pasillo_json_keep_ids(nodes, adj, "pasillo_grafo.json", salida=666, alpha=2.0)
 
 # =====================================================
 #                    CARREGAR OBJ
@@ -575,7 +628,7 @@ class MotorGrafico:
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
         for i in ["Q1-0007","Q1-0013"]:
             for j in range(20):
-                p = self.create_person([i], i)
+                p = self.create_person([i])
 
         self.people[0].infectar(1)  # Infectem la primera persona
 
