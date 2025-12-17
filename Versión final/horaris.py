@@ -1,92 +1,67 @@
-import json
-import os
+import csv, json, os
+from collections import defaultdict
 
-def main():
-    # Carpeta destino
-    save_dir = "DEMO2/data/horaris"
+DAY_ORDER = ["mon", "tue", "wed", "thu", "fri"]
 
-    # Crear carpeta si no existe
-    os.makedirs(save_dir, exist_ok=True)
+def hhmm_to_minutes(hhmm: str) -> int:
+    h, m = hhmm.strip().split(":")
+    return int(h) * 60 + int(m)
 
-    # 1. Input del nombre de la clase
-    class_name = input("Introduce el nombre de la clase: ").strip()
+def minutes_to_slot(mins: int, day_start_mins: int, slot_minutes: int) -> int:
+    return (mins - day_start_mins) // slot_minutes
 
-    # 2. Crear diccionario con una lista vacía
-    data = {class_name: [
-        "Q2/1009",
-        "Q2/1009",
-        "Q2/1009",
-        "Q2/1009",
-        "Q4/1003",
-        "Q4/1003",
-        "Q4/1003",
-        "Q4/1003",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "Q4/1013",
-        "Q4/1013",
-        "Q4/1013",
-        "Q4/1013",
-        "Q2/1009",
-        "Q2/1009",
-        "Q2/1009",
-        "Q2/1009",
-        "Q2/1009",
-        "Q2/1009",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT",
-        "OUT"
-    ]}
+def build_schedule_from_csv(
+    csv_path: str,
+    slot_minutes: int = 30,
+    day_start: str = "08:00",
+    travel_lead_slots: int = 1
+) -> dict:
+    day_start_mins = hhmm_to_minutes(day_start)
 
-    print("\nIntroduce valores para añadir a la lista.")
-    print("Escribe 'FIN' para terminar.\n")
+    # group -> day -> list[sessions]
+    week = defaultdict(lambda: {d: [] for d in DAY_ORDER})
 
-    # 3. Rellenar la lista con inputs
-    while True:
-        value = input("Añadir valor: ").strip()
-        
-        if value.upper() == "FIN" or value.upper() == "":
-            break
-        
-        data[class_name].append(value)
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            group = row["group"].strip()
+            if row["day"].isdigit():
+                day = DAY_ORDER[int(row["day"])]
+            else:
+                day = row["day"].strip().lower()
+            if row["start"].isdigit():
+                start_slot = int(row["start"])
+            else:
+                start = hhmm_to_minutes(row["start"])
+                start_slot = minutes_to_slot(start, day_start_mins, slot_minutes)
+            if row["end"].isdigit():
+                end_slot = int(row["end"])
+            else:
+                end = hhmm_to_minutes(row["end"])
+                end_slot = minutes_to_slot(end, day_start_mins, slot_minutes)
 
-    # 4. Guardar en JSON en la carpeta indicada
-    filename = os.path.join(save_dir, f"{class_name}.json")
+            sess = {
+                "start_slot": int(start_slot),
+                "end_slot": int(end_slot),
+                "room": row["room"].strip()
+            }
+            if "course" in row and row["course"].strip():
+                sess["course"] = row["course"].strip()
+            if "type" in row and row["type"].strip():
+                sess["type"] = row["type"].strip()
 
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+            week[group][day].append(sess)
 
-    print(f"\nDiccionario guardado correctamente en '{filename}'")
-    print("Contenido final:")
-    print(data)
-
+    # ordena sesiones por hora
+    out = {}
+    for group, days in week.items():
+        for d in DAY_ORDER:
+            days[d].sort(key=lambda s: s["start_slot"])
+        out[group] = days
+    return out
 
 if __name__ == "__main__":
-    main()
+    data = build_schedule_from_csv(os.path.join(os.getcwd(),"Versión final","horaris_ejemplo.csv"), slot_minutes=30, day_start="08:00", travel_lead_slots=1)
+    with open("horaris_generated.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print("✅ Generado: horaris_generated.json")
