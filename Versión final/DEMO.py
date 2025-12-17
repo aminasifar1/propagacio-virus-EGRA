@@ -627,8 +627,8 @@ class MotorGrafico:
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
         for i in ["Q1-0007","Q1-0013"]:
-            for j in range(20):
-                p = self.create_person([i], i)
+            for j in range(1):
+                p = self.create_person([i])
 
         self.people[0].infectar(1)  # Infectem la primera persona
 

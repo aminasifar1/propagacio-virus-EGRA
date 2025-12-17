@@ -34,7 +34,7 @@ class Person:
         self.speed = np.random.normal(0.5, 0.05)
 
         # Starting position and destiny
-        self._cambiar_sala(sala)
+        # self._cambiar_sala(sala)
         if position:
             self.position = position
         else:
@@ -285,15 +285,21 @@ class Person:
                     self._terminar_camino()
 
     def _definir_camino_hacia(self, destino):
-        sala_origen = self.mundo[self.sala]; sala_destino = self.mundo[destino]
-        id_actual = self._waypoint_mas_cercano(sala_origen)
-        if isinstance(sala_origen, Clase):
-            if id_actual == sala_origen.salida_id: self.camino_actual = [sala_origen.salida_id, sala_origen.entrada_id]
-            else: self.camino_actual = sala_origen.get_path(id_actual, sala_origen.salida_id)
-            self.indice_camino = 0; self.destino_sala = "pasillo"; return
-        if isinstance(sala_origen, Pasillo):
-            self.camino_actual = sala_origen.get_path(id_actual, sala_destino.entrada_id)
-            self.indice_camino = 0; self.destino_sala = destino
+        if not self.sala:
+            self.camino_actual = [666]
+            self.indice_camino = 0; self.destino_sala = "pasillo"
+        else:
+            sala_origen = self.mundo[self.sala]; sala_destino = self.mundo[destino]
+            id_actual = self._waypoint_mas_cercano(sala_origen)
+            if isinstance(sala_origen, Clase):
+                if id_actual == sala_origen.salida_id: self.camino_actual = [sala_origen.salida_id, sala_origen.entrada_id]
+                else: self.camino_actual = sala_origen.get_path(id_actual, sala_origen.salida_id[random.randint(0,len(sala_destino.salida_id)-1)])
+                self.indice_camino = 0; self.destino_sala = "pasillo"; return
+            elif isinstance(sala_origen, Pasillo):
+                print(id_actual)
+                self.camino_actual = sala_origen.get_path(id_actual, sala_destino.entrada_id[random.randint(0,len(sala_destino.entrada_id)-1)])
+                print(self.camino_actual)
+                self.indice_camino = 0; self.destino_sala = destino           
     
     def _waypoint_mas_cercano(self, sala):
         min_dist = float("inf"); id_mas_cercano = None
@@ -344,10 +350,16 @@ class Person:
         else:
             if not self.camino_actual: self._definir_camino_hacia(sala_objetivo)
             if self.camino_actual and self.indice_camino < len(self.camino_actual):
-                next_id = self.camino_actual[self.indice_camino]
-                destino_wp = self.mundo[self.sala].get_wp(next_id)
-                self.camino(destino_wp.position, duracion_paso=self.speed)
-                self.indice_camino += 1
+                if self.sala:
+                    next_id = self.camino_actual[self.indice_camino]
+                    destino_wp = self.mundo[self.sala].get_wp(next_id)
+                    self.camino(destino_wp.position, duracion_paso=self.speed)
+                    self.indice_camino += 1
+                else:
+                    next_id = self.camino_actual[self.indice_camino]
+                    destino_wp = self.mundo["pasillo"].get_wp(next_id)
+                    self.camino(destino_wp.position, duracion_paso=self.speed)
+                    self.indice_camino += 1
 
     def get_model_matrix(self):
         m_model = glm.mat4(1.0)

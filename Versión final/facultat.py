@@ -328,6 +328,7 @@ class Pasillo(Sala):
         return rutas_info[idx]["ruta"]
 
     def get_path(self, start_id: int, goal_id: int) -> List[int]:
+        start_id, goal_id = int(start_id), int(goal_id)
         key = self._key(start_id, goal_id)
         rutas = self.rutas.get(key)
         if not rutas:
