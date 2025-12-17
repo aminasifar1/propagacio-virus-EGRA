@@ -787,6 +787,9 @@ class MotorGrafico:
                     elif e.key == pg.K_e:
                         # Cámara siguiente
                         self.camera.next_preset()
+                    elif e.key == pg.K_h:
+                        self.virus.debug_grid = not self.virus.debug_grid
+                        print(f"🧩 Debug grid: {self.virus.debug_grid}")
                 if e.type == pg.KEYDOWN:
                     if e.key == pg.K_1:
                         self.speed = 1.0
@@ -834,9 +837,9 @@ class MotorGrafico:
             # ==========================
             # Render escenari i marker
             # ==========================
-            self.object.render()
-            self.marker.render()
             light_pos = self.object.update_light_position()
+            self.object.render(light_pos=light_pos)
+            self.marker.render()
 
             # Actualizar partículas de rastros a FPS de simulación
             self.virus.update_particles(dt_sim)
@@ -923,6 +926,11 @@ class MotorGrafico:
                 self.frame_count=0
                 self.last_time=time.time()
                 pg.display.set_caption(f"3D Viewer - FPS: {self.fps:.1f} - WASD moverte, TAB soltar ratón")
+
+            # si debug grid activat
+            if self.virus.debug_grid:
+                mvp = np.array(self.camera.m_proj * self.camera.m_view, dtype="f4").T
+                self.virus.render_debug_grid(mvp=mvp)
 
             pg.display.flip()
 

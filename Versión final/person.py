@@ -176,13 +176,12 @@ class Person:
 
                     float light_level;
                     if      (intensity > 0.95) light_level = 1.0;
-                    else if (intensity > 0.85) light_level = 0.9;
-                    else if (intensity > 0.70) light_level = 0.75;
-                    else if (intensity > 0.55) light_level = 0.6;
-                    else if (intensity > 0.40) light_level = 0.45;
-                    else if (intensity > 0.25) light_level = 0.30;
-                    else if (intensity > 0.10) light_level = 0.20;
-                    else                       light_level = 0.10;
+                    else if (intensity > 0.80) light_level = 0.9;
+                    else if (intensity > 0.60) light_level = 0.8;
+                    else if (intensity > 0.40) light_level = 0.7;
+                    else if (intensity > 0.20) light_level = 0.6;
+                    else if (intensity > 0.10) light_level = 0.5;
+                    else                       light_level = 0.3;
 
                     vec3 halfwayDir = normalize(light_dir + view_dir);
                     float NdotH = max(dot(norm, halfwayDir), 0.0);
@@ -382,7 +381,7 @@ class Person:
         # Pasada 1: Contorno
         self.ctx.cull_face = 'front'
         if 'outline_width' in shader:
-            shader['outline_width'].value = 0.015 
+            shader['outline_width'].value = 0.01
         vao_tri.render(mode=mgl.TRIANGLES)
 
         # Pasada 2: Persona (Toon)

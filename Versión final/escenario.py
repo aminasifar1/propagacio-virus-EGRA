@@ -159,11 +159,13 @@ class Escenario:
         light_z = self.light_radius * math.sin(self.light_angle)
         return (light_x, 12.0, light_z)
 
-    def render(self):
+    def render(self, light_pos=None):
         self.ctx.enable(mgl.CULL_FACE)
         
         self.shader['m_model'].write(self.m_model)
-        self.shader['light_pos'].value = self.update_light_position()
+        if light_pos is None:
+            light_pos = self.update_light_position()
+        self.shader['light_pos'].value = light_pos
         self.shader['view_pos'].value = tuple(self.camera.position)
         self.shader['m_proj'].write(self.camera.m_proj)
         self.shader['m_view'].write(self.camera.m_view)
