@@ -490,7 +490,7 @@ def cargar_diccionarios_desde_carpeta(ruta):
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(800, 700)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1640, 1024)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
@@ -533,9 +533,11 @@ class MotorGrafico:
         # SimClock (tiempo del mundo)
         self.day_sim_seconds = 20 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
         self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
+        self.exposure_scale = 1.0       # pasillo por defecto
+        self.class_exposure_scale = 6.0 # ejemplo: 20 min sim = 120 min real -> 6x
 
         # Virus
-        self.tick_duration = 60
+        self.tick_duration = 1
         self.tick_timer = 0.0
         self.tick_global = 0  # --- Contador global de ticks ---
         self.infection_probability = 0.2
@@ -568,11 +570,11 @@ class MotorGrafico:
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
-        # for i in ["Q1-0007","Q1-0013"]:
-        #     for j in range(50):
-        #         p = self.create_person([i], i)
+        for i in ["Q1-0007","Q1-0013"]:
+            for j in range(50):
+                p = self.create_person([i], i)
 
-        # self.people[0].infectar(1)  # Infectem la primera persona
+        self.people[0].infectar(1)  # Infectem la primera persona
 
         # Creem la primera persona només per obtenir el VAO
         # first_person = Person(self, self.ctx, self.camera, self.p_data, facultad, ['aula1'], 'pasillo', position=glm.vec3(1000,1000,1000))
@@ -667,12 +669,14 @@ class MotorGrafico:
         #             abs(pos1.z - pos2.z) <= (bb1_half.z + bb2_half.z))
 
         while True:
-            dt = self.clock.tick(60)/1000.0
-            dt *= self.speed
-            current_frame_time = time.time()
-            self.delta_time = current_frame_time - last_frame_time
-            if self.delta_time == 0: self.delta_time = 1e-6
-            last_frame_time = current_frame_time
+            dt_wall = self.clock.tick(60) / 1000.0
+            if dt_wall <= 0: dt_wall = 1e-6
+            self.delta_time = dt_wall  # dt_wall para cámara/UI
+
+            dt_sim = dt_wall * self.speed
+
+            dt_real_eq = dt_sim * self.exposure_scale
+
             keys = pg.key.get_pressed()
             if (keys[pg.K_LALT] or keys[pg.K_RALT]):
                 self.marker.handle_input(keys)
@@ -742,10 +746,10 @@ class MotorGrafico:
                 #     self.tiempo_persona = 0.0
 
                 # Tick virus
-                self.tick_timer += self.delta_time * self.speed
-                if self.tick_timer >= self.tick_duration:
+                self.tick_timer += dt_sim
+                while self.tick_timer >= self.tick_duration:
                     self.tick_timer -= self.tick_duration
-                    self.tick_global += 1  # --- Incrementa tick global
+                    self.tick_global += 1
                     self.virus.check_infections(self.mundo)
 
             # ==========================
@@ -756,7 +760,7 @@ class MotorGrafico:
             light_pos = self.object.update_light_position()
 
             # Actualizar partículas de rastros a FPS de simulación
-            self.virus.update_particles(self.delta_time * self.speed)
+            self.virus.update_particles(dt_sim)
 
             self.virus.render(light_pos)
 
@@ -770,7 +774,7 @@ class MotorGrafico:
             for p in self.people:
                 if self.simulando:
                     # old_pos = glm.vec3(p.position)  # guardem posició antiga
-                    p.update(self.delta_time * self.speed)
+                    p.update(dt_sim)
                     # # Comprovem col·lisions amb altres persones
                     # for other in self.people:
                     #     if other is p: continue

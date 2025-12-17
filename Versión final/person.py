@@ -38,8 +38,6 @@ class Person:
             self.position = position
         else:
             self.position = self.mundo[self.sala].get_wp(int(self.mundo[self.sala].salida_id[0])).position
-        self.ground_y = ground_y
-        self.position.y = self.ground_y
         self.m_model = glm.translate(glm.mat4(1.0), self.position)
 
         self.rotation_angle = 0.0
@@ -187,7 +185,7 @@ class Person:
     # ... (Resto de métodos de lógica de movimiento igual que antes) ...
     
     def infectar(self, distance):
-        self.ring = Ring(self.ctx, self.camera, radius=distance, thickness=0.15, height=0.1, position=self.position, altura=self.ground_y)
+        self.ring = Ring(self.ctx, self.camera, radius=distance, thickness=0.15, height=0.1, position=self.position, altura=self.position.y)
         puff_position = self.position + glm.vec3(0, 1.0, 0)
         self.puff.create_puff(puff_position, num_particles=12)
 
@@ -209,24 +207,34 @@ class Person:
 
     def paso(self, destino, duracion=1.0):
         self.en_movimiento = True
-        self.t_inicio = pg.time.get_ticks()
-        self.duracion = duracion / self.motor.speed * 1000
+        self._move_elapsed = 0.0
+        self.duracion = max(float(duracion), 1e-6)  # segundos del mundo (real-equivalentes)
+
         self.pos_inicial = glm.vec3(self.m_model[3].x, self.m_model[3].y, self.m_model[3].z)
         self.pos_final = glm.vec3(destino)
 
-    def actualizar_movimiento(self):
-        if not self.en_movimiento: return
-        t = (pg.time.get_ticks() - self.t_inicio) / self.duracion
-        if t >= 1.0: t = 1.0; self.en_movimiento = False
+    def actualizar_movimiento(self, delta_time):
+        if not self.en_movimiento:
+            return
+
+        self._move_elapsed += delta_time
+        t = self._move_elapsed / self.duracion
+        if t >= 1.0:
+            t = 1.0
+            self.en_movimiento = False
+
         pos = glm.mix(self.pos_inicial, self.pos_final, t)
         pos.y += 4 * 0.2 * t * (1 - t)
         self.m_model = glm.translate(glm.mat4(), pos)
         self.position = pos
+
         if not self.en_movimiento:
             if self.pasos and self.indice_paso + 1 < len(self.pasos):
-                self.indice_paso += 1; self.paso(self.pasos[self.indice_paso], self.speed)
+                self.indice_paso += 1
+                self.paso(self.pasos[self.indice_paso], self.speed)
             else:
-                if hasattr(self, "camino_actual") and self.indice_camino >= len(self.camino_actual): self._terminar_camino()
+                if hasattr(self, "camino_actual") and self.indice_camino >= len(self.camino_actual):
+                    self._terminar_camino()
 
     def _definir_camino_hacia(self, destino):
         sala_origen = self.mundo[self.sala]; sala_destino = self.mundo[destino]
@@ -264,7 +272,7 @@ class Person:
     def update(self, delta_time):
         self.puff.update(delta_time)
         if self.ring: self.ring.update(self.position) 
-        self.actualizar_movimiento()
+        self.actualizar_movimiento(delta_time)
         if self.en_movimiento: return
         if not self.schedule: return
         sala_objetivo = self.schedule[0]; sala_actual = self.sala
