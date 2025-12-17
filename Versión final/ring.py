@@ -240,7 +240,7 @@ class Particle:
     solid-color mode (no mask). The shader exposes uniforms to switch between
     the modes, so you can toggle per-particle or per-emission.
     """
-    def __init__(self, ctx, camera, position, color=(1.0, 0.5, 0.0), lifetime=0.6, max_scale=0.25, min_alpha=0.25, solid=False, mask_inner=0.35, mask_outer=0.5):
+    def __init__(self, ctx, camera, position, color=(1.0, 0.5, 0.0), lifetime=0.6, max_scale=0.25, min_alpha=0.25, solid=False, mask_inner=0.35, mask_outer=0.5, fade_profile='smooth'):
         self.ctx = ctx
         self.camera = camera
         self.position = glm.vec3(position)
@@ -260,6 +260,7 @@ class Particle:
         )
         self.is_dead = False
         self._init_shared()
+        self.fade_profile = fade_profile
 
     def _init_shared(self):
         """Initialize shared quad geometry and shader for all particles."""
@@ -365,13 +366,24 @@ class Particle:
         if self.age >= self.lifetime:
             self.is_dead = True
             return
-        self.position += self.velocity * delta_time
-        self.velocity.y -= 1.5 * delta_time
+        # Para rastros (late_fade): no mover ni aplicar gravedad (evita que caigan al infinito)
+        if getattr(self, "fade_profile", "smooth") != "late_fade":
+            self.position += self.velocity * delta_time
+            self.velocity.y -= 1.5 * delta_time
+
         progress = self.age / self.lifetime
-        if progress < 0.3:
-            self.scale = self.max_scale * (progress / 0.3)
+
+        if getattr(self, "fade_profile", "smooth") == "late_fade":
+            # aparición rápida (independiente del lifetime largo del rastro)
+            grow_time = 0.12  # prueba 0.08–0.18
+            t = min(1.0, self.age / grow_time)
+            self.scale = self.max_scale * t
         else:
-            self.scale = self.max_scale
+            # comportamiento original para partículas normales (puff)
+            if progress < 0.3:
+                self.scale = self.max_scale * (progress / 0.3)
+            else:
+                self.scale = self.max_scale
 
     def render(self, alpha_mul=1.0):
         if self.is_dead:
@@ -382,18 +394,31 @@ class Particle:
         def smoothstep01(x: float) -> float:
             x = max(0.0, min(1.0, x))
             return x * x * (3.0 - 2.0 * x)
+        
+        if getattr(self, "fade_profile", "smooth") == "late_fade":
+            start_fade = 0.85  # solo se desvanece al final
+            max_alpha = 0.60   # <- menos opaco
 
-        # Fade in/out en segundos (ajusta si quieres)
-        fade_in_time = 0.08
-        fade_out_time = 0.12
+            if progress <= start_fade:
+                alpha = max_alpha
+            else:
+                t = (progress - start_fade) / (1.0 - start_fade)
+                alpha = max_alpha * max(0.0, 1.0 - t)
 
-        fade_in = smoothstep01(self.age / fade_in_time) if fade_in_time > 0 else 1.0
-        remaining = self.lifetime - self.age
-        fade_out = smoothstep01(remaining / fade_out_time) if fade_out_time > 0 else 1.0
+            alpha *= float(alpha_mul)
+            alpha = max(0.0, min(1.0, alpha))
+        else:
+            # Fade in/out en segundos (ajusta si quieres)
+            fade_in_time = 0.08
+            fade_out_time = 0.12
 
-        alpha = (1.0 - progress) * fade_in * fade_out
-        alpha *= float(alpha_mul)
-        alpha = max(0.0, min(1.0, alpha))
+            fade_in = smoothstep01(self.age / fade_in_time) if fade_in_time > 0 else 1.0
+            remaining = self.lifetime - self.age
+            fade_out = smoothstep01(remaining / fade_out_time) if fade_out_time > 0 else 1.0
+
+            alpha = (1.0 - progress) * fade_in * fade_out
+            alpha *= float(alpha_mul)
+            alpha = max(0.0, min(1.0, alpha))
 
         # Billboard facing camera: pass center and camera axes
         self.shader['m_proj'].write(self.camera.m_proj)
@@ -439,7 +464,7 @@ class Particles:
         self.mask_outer = float(mask_outer)
         self.min_alpha = float(min_alpha)
 
-    def emit(self, position, num=6, color=None, lifetime=1.0, radius=None, solid=None, mask_inner=None, mask_outer=None, min_alpha=None):
+    def emit(self, position, num=6, color=None, lifetime=1.0, radius=None, solid=None, mask_inner=None, mask_outer=None, min_alpha=None, fade_profile=None):
         """Emit `num` particles around `position`.
 
         If `radius` is provided, particles spawn uniformly within a sphere of that radius
@@ -448,6 +473,8 @@ class Particles:
         """
         color = color or (1.0, 0.5, 0.0)
         r = radius if radius is not None else 0.25
+
+        profile = fade_profile if fade_profile is not None else "smooth"
 
         def random_point_in_sphere(rval):
             if rval <= 0.0:
@@ -479,6 +506,7 @@ class Particles:
                 solid=solid_mode,
                 mask_inner=inner,
                 mask_outer=outer,
+                fade_profile=profile
             )
             self.particles.append(p)
 
