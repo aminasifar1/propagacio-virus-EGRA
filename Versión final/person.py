@@ -22,7 +22,7 @@ class Person:
 
         self.mundo = facultad
         self.schedule = schedule
-        self.present = True
+        self.present = False
         self.sala = None
         self.ring = None
         self.puff = PuffSystem(self.ctx, self.camera)
@@ -35,7 +35,7 @@ class Person:
         self.speed = np.random.normal(0.5, 0.05)
 
         # Starting position and destiny
-        # self._cambiar_sala(sala)
+        self._cambiar_sala("pasillo")
         if position:
             self.position = position
         else:
@@ -46,12 +46,14 @@ class Person:
             L12 = glm.length(p2 - p1)
             L = L01 + L12
             if L == 0:
-                return glm.vec3(p0)
+                self.position = p0
+                self.spawn = p0
 
             r = random.random() * L
             a, b = (p0, p1) if r < L01 else (p1, p2)
             t = random.random()
             self.position = a + t * (b - a)
+            self.spawn = a + t * (b - a)
             
         self.m_model = glm.translate(glm.mat4(1.0), self.position)
 
@@ -66,6 +68,7 @@ class Person:
         self.sentado = False
         self.objetivo_asiento = None
         self.destino_sala = None
+        self.roaming = False
 
         # Bounding Box (AABB)
         self.bb_half = glm.vec3(0.25, self.height, 0.25)
@@ -257,9 +260,39 @@ class Person:
             # Aquí disparas tu lógica existente para ir a un destino:
             # por ejemplo, ajustar schedule/objetivo
             self.schedule = [room]
+            self.present = True
             return True
 
         return False
+    
+    def _update_roaming(self, sala_name):
+        sala = self.mundo[sala_name]
+
+        # Si no tengo camino, elijo un destino nuevo y genero ruta
+        if not self.camino_actual:
+            ids = list(sala.waypoints.keys())
+            if not ids:
+                return
+
+            start_id = self._waypoint_mas_cercano(sala)
+            # evita quedarte eligiendo el mismo punto
+            candidates = [i for i in ids if i != start_id]
+            target_id = random.choice(candidates) if candidates else start_id
+
+            self.objetivo_asiento = None
+            self.camino_actual = sala.get_path(start_id, target_id)
+            self.indice_camino = 0
+
+        # Avanza por el camino
+        if self.indice_camino < len(self.camino_actual):
+            next_id = self.camino_actual[self.indice_camino]
+            wp = sala.get_wp(next_id)
+            if wp is None:
+                self.camino_actual = []
+                self.indice_camino = 0
+                return
+            self.camino(wp.position, duracion_paso=self.speed)
+            self.indice_camino += 1
 
     def actualizar_movimiento(self, delta_time):
         if not self.en_movimiento:
@@ -291,17 +324,19 @@ class Person:
         else:
             try:
                 sala_origen = self.mundo[self.sala]; sala_destino = self.mundo[destino]
+                id_actual = self._waypoint_mas_cercano(sala_origen)
+                if isinstance(sala_origen, Clase):
+                    if id_actual == sala_origen.salida_id: self.camino_actual = [sala_origen.salida_id, sala_origen.entrada_id]
+                    else: self.camino_actual = sala_origen.get_path(id_actual, sala_origen.salida_id[random.randint(0,len(sala_destino.salida_id)-1)])
+                    self.indice_camino = 0; self.destino_sala = "pasillo"; return
+                elif isinstance(sala_origen, Pasillo):
+                    if self.position == self.spawn:
+                        id_actual = 666
+                    self.camino_actual = sala_origen.get_path(id_actual, sala_destino.entrada_id[random.randint(0,len(sala_destino.entrada_id)-1)])
+                    self.indice_camino = 0; self.destino_sala = destino 
             except KeyError:
-                self.camino_actual = []
-                return
-            id_actual = self._waypoint_mas_cercano(sala_origen)
-            if isinstance(sala_origen, Clase):
-                if id_actual == sala_origen.salida_id: self.camino_actual = [sala_origen.salida_id, sala_origen.entrada_id]
-                else: self.camino_actual = sala_origen.get_path(id_actual, sala_origen.salida_id[random.randint(0,len(sala_destino.salida_id)-1)])
-                self.indice_camino = 0; self.destino_sala = "pasillo"; return
-            elif isinstance(sala_origen, Pasillo):
-                self.camino_actual = sala_origen.get_path(id_actual, sala_destino.entrada_id[random.randint(0,len(sala_destino.entrada_id)-1)])
-                self.indice_camino = 0; self.destino_sala = destino           
+                self.schedule = ["pasillo"]
+                self.roaming = True          
     
     def _waypoint_mas_cercano(self, sala):
         min_dist = float("inf"); id_mas_cercano = None
@@ -313,11 +348,23 @@ class Person:
     def _terminar_camino(self):
         if self.destino_sala:
             self._cambiar_sala(self.destino_sala)
-            self.destino_sala = None; self.camino_actual = []; self.indice_camino = 0
-            if isinstance(self.mundo[self.sala], Clase): self.sentado = False
-        else: 
+            self.destino_sala = None
             self.camino_actual = []
+            self.indice_camino = 0
+            if isinstance(self.mundo[self.sala], Clase):
+                self.sentado = False
+            return
+
+        # Fin de un camino "interno" (asiento o roaming)
+        self.camino_actual = []
+        self.indice_camino = 0
+
+        # Solo te "sientas" si realmente ibas a un asiento
+        if isinstance(self.mundo[self.sala], Clase) and getattr(self, "objetivo_asiento", None) is not None:
             self.sentado = True
+        else:
+            self.sentado = False
+            self.objetivo_asiento = None
     
     def _cambiar_sala(self, destino):
         if self.sala == destino: return
@@ -333,6 +380,10 @@ class Person:
         if not self.schedule: return
         sala_objetivo = self.schedule[0]; sala_actual = self.sala
         if sala_actual == sala_objetivo:
+            sala = self.mundo[sala_actual]
+            if not isinstance(sala, Clase):
+                self._update_roaming(sala_actual)
+                return
             if not self.sentado:
                 if not self.camino_actual:
                     sala = self.mundo[sala_actual]
