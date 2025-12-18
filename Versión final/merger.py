@@ -103,11 +103,11 @@ if __name__ == "__main__":
     # - prefix: "Q1-0"
     # - start/end: 12 y 30
     report = merge_clase_entradas_into_pasillo(
-        pasillo_json_path="pasillo_grafo.json",
+        pasillo_json_path="Versión final/data/salas/pasillo.json",
         clases_dir="Versión final/data/salas",
-        prefix="Q1-0",
-        pasillo_start_id=12,
-        pasillo_end_id=31,
+        prefix="Q4-1",
+        pasillo_start_id=55,
+        pasillo_end_id=59,
         out_path="pasillo_grafo_merged.json",
     )
     print(report)

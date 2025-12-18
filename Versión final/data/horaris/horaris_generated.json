@@ -1,0 +1,2111 @@
+{
+  "GED1-81": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-0019"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1009"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q3-0013"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1003"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-0013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q1-0013"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q2-1013"
+      }
+    ]
+  },
+  "GED1-82": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-0013"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1009"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q4-1003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q4-1003"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1009"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-0013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q1-0013"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1013"
+      }
+    ]
+  },
+  "GED2-81": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1005"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q2-1009"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1005"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q4-1005"
+      }
+    ]
+  },
+  "GED2-82": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q4-1003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q2-1009"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-1005"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q4-1003"
+      }
+    ]
+  },
+  "GED3-81": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1005"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q2-1013"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q2-0013"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 22,
+        "end_slot": 26,
+        "room": "Q2-0013"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q2-1013"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1003"
+      }
+    ]
+  },
+  "GED3-82": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q2-1013"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q2-0013"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 22,
+        "end_slot": 26,
+        "room": "Q2-0013"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q2-1013"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1005"
+      }
+    ]
+  },
+  "GED4-81": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1003"
+      }
+    ],
+    "wed": [],
+    "thu": [
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 16,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 18,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1003"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1003"
+      }
+    ]
+  },
+  "GEST1-31": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 7,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q5-1005"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q5-1005"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q5-1005"
+      }
+    ],
+    "wed": [],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-0007"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q5-1005"
+      }
+    ]
+  },
+  "GEST1-33": {
+    "mon": [
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q2-1005"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q3-1003"
+      }
+    ],
+    "wed": [],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 7,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q3-1003"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q3-1003"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q2-1005"
+      }
+    ]
+  },
+  "GEST2-31": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q6-2005"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q6-2004"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q3-1007"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q6-2005"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q6-2005"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q5-2006"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q5-2006"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q6-2004"
+      },
+      {
+        "start_slot": 15,
+        "end_slot": 21,
+        "room": "Q5-2006"
+      }
+    ],
+    "fri": []
+  },
+  "GEST3-31": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-0011"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-0011"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q6-2007"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q3-0013"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q5-2009"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 13,
+        "room": "Q5-2009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 5,
+        "end_slot": 11,
+        "room": "Q3-1007"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q5-2009"
+      }
+    ]
+  },
+  "GEST3-33": {
+    "mon": [
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q1-1007"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 20,
+        "room": "Q6-2007"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 7,
+        "room": "Q6-2007"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q1-1007"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q1-1007"
+      }
+    ],
+    "thu": [],
+    "fri": [
+      {
+        "start_slot": 7,
+        "end_slot": 11,
+        "room": "Q1-1007"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q1-1007"
+      }
+    ]
+  },
+  "GEST4-33": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q3-0003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q3-0003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q5-2009"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q3-0009"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q5-2009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q5-2009"
+      }
+    ],
+    "fri": []
+  },
+  "GEQ1-21": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q2-1003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0011"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0011"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0011"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0011"
+      }
+    ]
+  },
+  "GEQ2-21": {
+    "mon": [
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-0011"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-0011"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-0011"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q1-1007"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q4-0011"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 2,
+        "end_slot": 6,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-0011"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q3-0013"
+      }
+    ]
+  },
+  "GEQ3-21": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q3-0003"
+      },
+      {
+        "start_slot": 11,
+        "end_slot": 13,
+        "room": "Q3-0003"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q1-1011"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0003"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 3,
+        "end_slot": 5,
+        "room": "Q4-0003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-0003"
+      }
+    ]
+  },
+  "GEQ4-21": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-1009"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-1009"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1009"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 3,
+        "room": "Q4-1009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 2,
+        "end_slot": 7,
+        "room": "Q3-1011"
+      }
+    ]
+  },
+  "GEI1-1": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q5-2006"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q3-0007"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-1011"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 22,
+        "end_slot": 26,
+        "room": "Q2-0007"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-0013"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q2-0013"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q5-2006"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 11,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q5-2003"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 22,
+        "end_slot": 26,
+        "room": "Q5-2003"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-1003"
+      }
+    ]
+  },
+  "GEI2-1": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-0009"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-0007"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-0009"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-0007"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-0007"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q1-1003"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-0007"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q3-0009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q3-0003"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q3-0003"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-0007"
+      }
+    ]
+  },
+  "GGCIS1-1": {
+    "mon": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q5-1009"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q5-2006"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 9,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q3-0009"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 1,
+        "end_slot": 5,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 5,
+        "end_slot": 7,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 7,
+        "end_slot": 9,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 9,
+        "end_slot": 13,
+        "room": "Q5-1009"
+      }
+    ],
+    "fri": []
+  },
+  "GGCIS2-1": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q5-2003"
+      }
+    ],
+    "tue": [],
+    "wed": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q6-1012"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q6-1012"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q5-2003"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1005"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q2-1005"
+      }
+    ]
+  },
+  "GGCIS3-1": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q2-0011"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 16,
+        "end_slot": 18,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 22,
+        "end_slot": 24,
+        "room": "Q2-1009"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1009"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q2-1009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q1-0007"
+      },
+      {
+        "start_slot": 22,
+        "end_slot": 24,
+        "room": "Q1-0007"
+      }
+    ]
+  },
+  "GIA1-1": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q4-1009"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1009"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 14,
+        "end_slot": 16,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 18,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1009"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 14,
+        "end_slot": 16,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 18,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1009"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1009"
+      }
+    ]
+  },
+  "GIA2-1": {
+    "mon": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1013"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1013"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1013"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q4-1013"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 16,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 18,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q4-1013"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q4-1013"
+      }
+    ]
+  },
+  "GIA3-1": {
+    "mon": [
+      {
+        "start_slot": 12,
+        "end_slot": 16,
+        "room": "Q3-1011"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 20,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q4-0003"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-0011"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 14,
+        "end_slot": 16,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 18,
+        "room": "Q3-0009"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q3-0011"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 12,
+        "end_slot": 16,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 20,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q4-1005"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q3-0011"
+      }
+    ]
+  },
+  "GIA4-1": {
+    "mon": [
+      {
+        "start_slot": 12,
+        "end_slot": 16,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 20,
+        "room": "Q5-2003"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q3-0009"
+      }
+    ],
+    "tue": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1005"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q4-1005"
+      }
+    ],
+    "wed": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 22,
+        "room": "Q3-0011"
+      }
+    ],
+    "thu": [
+      {
+        "start_slot": 12,
+        "end_slot": 16,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 16,
+        "end_slot": 20,
+        "room": "Q3-0011"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 24,
+        "room": "Q4-1005"
+      }
+    ],
+    "fri": [
+      {
+        "start_slot": 14,
+        "end_slot": 18,
+        "room": "Q4-1003"
+      },
+      {
+        "start_slot": 18,
+        "end_slot": 20,
+        "room": "Q2-1003"
+      },
+      {
+        "start_slot": 20,
+        "end_slot": 22,
+        "room": "Q2-1003"
+      }
+    ]
+  }
+}

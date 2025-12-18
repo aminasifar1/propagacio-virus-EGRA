@@ -17,7 +17,7 @@ from infectionbar import InfectionBar
 import menu
 from simclock import SimClock
 from scheduler import SimCalendar
-
+from collections import defaultdict
 
 # =====================================================
 #                   GRAFO PUNTOS
@@ -541,6 +541,32 @@ def cargar_diccionarios_desde_carpeta(ruta):
 
     return diccionario_final
 
+def repartir_por_grupos(data: dict, total_por_grupo: int, sep: str = "-") -> dict:
+    """
+    data: dict cargado del JSON (keys tipo 'GED1-81', 'GED1-82', ...)
+    total_por_grupo: entero a repartir dentro de cada grupo (p.ej. 50)
+    sep: separador para definir el grupo (por defecto '-')
+
+    Devuelve: dict con mismas keys y valor int asignado.
+    Ej: si GED1 tiene 2 keys y total_por_grupo=50 -> cada una recibe 25.
+    """
+    grupos = defaultdict(list)
+
+    for k in data.keys():
+        grupo = k.split(sep, 1)[0]   # 'GED1-81' -> 'GED1'
+        grupos[grupo].append(k)
+
+    out = {}
+    for grupo, keys in grupos.items():
+        n = len(keys)
+        if n == 0:
+            continue
+        asignacion = total_por_grupo // n  # redondeo hacia abajo
+        for k in keys:
+            out[k] = asignacion
+
+    return out
+
 # =====================================================
 #                    MOTOR GRÀFIC
 # =====================================================
@@ -586,7 +612,7 @@ class MotorGrafico:
         self.show_bboxes = False
 
         # SimClock (tiempo del mundo)
-        self.day_sim_seconds = 5 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
+        self.day_sim_seconds = 2 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
         self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
         self.exposure_scale = 1.0       # pasillo por defecto
         self.class_exposure_scale = 6.0 # ejemplo: 20 min sim = 120 min real -> 6x
@@ -626,9 +652,10 @@ class MotorGrafico:
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
-        for i in ["Q1-0007","Q1-0013"]:
-            for j in range(1):
-                p = self.create_person([i])
+        reparto = repartir_por_grupos(self.people_type, total_por_grupo=20)
+        for i in reparto:
+            for j in range(reparto[i]):
+                p = self.create_person(grupo=i)
 
         self.people[0].infectar(1)  # Infectem la primera persona
 

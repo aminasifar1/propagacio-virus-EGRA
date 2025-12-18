@@ -28,6 +28,7 @@ class Person:
         self.puff = PuffSystem(self.ctx, self.camera)
         self.motor = motor
         self.group_id = group
+        self.preclass_plan = None
 
         # Personalizacion
         self.height = min(max(np.random.normal(1.75, 0.1), 1.6), 1.9)
@@ -295,9 +296,7 @@ class Person:
                 else: self.camino_actual = sala_origen.get_path(id_actual, sala_origen.salida_id[random.randint(0,len(sala_destino.salida_id)-1)])
                 self.indice_camino = 0; self.destino_sala = "pasillo"; return
             elif isinstance(sala_origen, Pasillo):
-                print(id_actual)
                 self.camino_actual = sala_origen.get_path(id_actual, sala_destino.entrada_id[random.randint(0,len(sala_destino.entrada_id)-1)])
-                print(self.camino_actual)
                 self.indice_camino = 0; self.destino_sala = destino           
     
     def _waypoint_mas_cercano(self, sala):
