@@ -625,9 +625,9 @@ class MotorGrafico:
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
-        reparto = repartir_por_grupos(self.people_type, total_por_grupo=30)
+        reparto = repartir_por_grupos(self.people_type, total_por_grupo=20)
         for i in reparto:
-            for j in range(1):
+            for j in range(reparto[i]):
                 p = self.create_person(grupo=i)
 
         self.people[0].infectar(1)  # Infectem la primera persona

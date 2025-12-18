@@ -221,7 +221,7 @@ class Virus:
             for infected in infected_people:
                 infection_radius = infected.ring.contagion_radius
                 for candidate in grid.neighbors(infected.position):
-                    if candidate.ring:
+                    if candidate.ring or not candidate.present:
                         continue
                     # solo infectamos si está en la lista local de no infectados
                     # (esto mantiene la lógica por sala)
@@ -404,7 +404,7 @@ class Rastro:
         self.evolution = [1 - (1 / evolution_rate) * i for i in range(evolution_rate + 1)]
         self.tick_duration = tick_duration
         steps = max(1, len(self.evolution) - 1)
-        self.particle_lifetime = max(0.6, self.tick_duration * steps * 1.2)
+        self.particle_lifetime = max(0.25, self.tick_duration * steps * 0.45)
         self.particles_per_step = particles_per_step
 
         # Infection visual parameters
