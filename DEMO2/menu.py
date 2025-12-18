@@ -11,6 +11,20 @@ _CONTENT_BOTTOM = 0
 def get_content_bottom():
     return _CONTENT_BOTTOM
 
+FONT = None
+FONT_SMALL = None
+
+def ensure_fonts():
+    global FONT, FONT_SMALL
+    if FONT is None or FONT_SMALL is None:
+        # Asegura que pygame.font está listo
+        if not pygame.get_init():
+            pygame.init()
+        if not pygame.font.get_init():
+            pygame.font.init()
+        FONT = pygame.font.Font(None, 36)
+        FONT_SMALL = pygame.font.Font(None, 24)
+
 # ============================================================
 #     CLASE SLIDER
 # ============================================================
@@ -30,6 +44,8 @@ class Slider:
         self.dragging = False
 
     def draw(self, surf):
+        ensure_fonts()
+        
         # Texto Label
         text = FONT.render(self.label, True, (255, 255, 255))
         surf.blit(text, (self.x, self.y - 25))

@@ -285,6 +285,21 @@ nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
 export_pasillo_json_keep_ids(nodes, adj, "pasillo_grafo.json", salida=666, alpha=2.0)
 
 # =====================================================
+#                    TIEMPO
+# =====================================================
+
+def weekday_name(i):
+    return ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"][i]
+
+def slot_to_hhmm(slot_index):
+    # slot 0 => 08:00, slot 1 => 08:30 ...
+    minutes = 8 * 60 + slot_index * 30
+    h = minutes // 60
+    m = minutes % 60
+    return f"{h:02d}:{m:02d}"
+
+
+# =====================================================
 #                    CARREGAR OBJ
 # =====================================================
 def load_obj(path: str, default_color=(0.1, 0.1, 0.1)) -> tuple[np.ndarray, np.ndarray, tuple[glm.vec3, glm.vec3], str]:
@@ -553,15 +568,23 @@ class MotorGrafico:
         # SimClock (tiempo del mundo)
         self.day_sim_seconds = 0.05 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
         self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
-        self.exposure_scale = 1.0       # pasillo por defecto
+        self.exposure_scale = 0       # pasillo por defecto
         self.class_exposure_scale = 6.0 # ejemplo: 20 min sim = 120 min real -> 6x
         self.calendar = SimCalendar(slot_sim_minutes=5, start_weekday=0)
+
+        # --- Tiempo "académico" para UI (slots de 30 min) ---
+        self.slot_sim_minutes = 5          # 1 slot (30 min real) dura 5 min simulados visibles
+        self.slot_sim_seconds = self.slot_sim_minutes * 60.0
+        self.slots_per_day = 28            # 08:00 -> 22:00 son 14h -> 28 slots
+        self.sim_weekday = 0               # 0=Lun ... 4=Vie
+        self.sim_time_in_day = 0.0         # segundos simulados desde las 08:00
+
 
         # Virus
         self.tick_duration = 1
         self.tick_timer = 0.0
         self.tick_global = 0  # --- Contador global de ticks ---
-        self.infection_probability = 0.2
+        self.infection_probability = 0.02
         self.virus = Virus(self, self.tick_duration, self.tick_timer, self.infection_probability, 1, 0.9)
 
         # Waypoint Visualizer
@@ -711,6 +734,12 @@ class MotorGrafico:
 
             if self.simulando:
                 self.calendar.step(dt_sim)
+                self.sim_time_in_day += dt_sim
+                day_len = self.slots_per_day * self.slot_sim_seconds
+
+                while self.sim_time_in_day >= day_len:
+                    self.sim_time_in_day -= day_len
+                    self.sim_weekday = (self.sim_weekday + 1) % 5  # saltamos finde
 
             dt_real_eq = dt_sim * self.exposure_scale
 
@@ -874,7 +903,48 @@ class MotorGrafico:
             if total_people > 0:
                 pass
                 # self.infection_bar.render(self.ui_surface, num_infected, total_people)
+            # Render menú (sliders)
             menu.render_menu(self.menu_surface)
+
+            # Construir stats (rápido y robusto)
+            total = len(self.people)
+            present = sum(1 for p in self.people if getattr(p, "present", False))
+            infected = sum(1 for p in self.people if getattr(p, "ring", None) is not None)
+            moving = sum(1 for p in self.people if getattr(p, "en_movimiento", False))
+            seated = sum(1 for p in self.people if getattr(p, "sentado", False))
+            slot_now = int(self.sim_time_in_day // self.slot_sim_seconds)
+            sim_day = weekday_name(self.sim_weekday)
+            sim_hhmm = slot_to_hhmm(slot_now)
+
+            # Top salas por infección (si existe algún atributo numérico)
+            top_rooms = []
+            for name, sala in self.mundo.items():
+                # cambia "contaminacion" por tu nombre real si es distinto
+                v = getattr(sala, "contaminacion", None)
+                if isinstance(v, (int, float)):
+                    top_rooms.append((name, float(v)))
+            top_rooms.sort(key=lambda x: x[1], reverse=True)
+
+            stats = {
+                "total": total,
+                "present": present,
+                "infected": infected,
+                "healthy": max(0, total - infected),
+                "moving": moving,
+                "seated": seated,
+                "speed": self.speed,
+                "sim_day": sim_day,
+                "sim_time": sim_hhmm,
+                # si luego tienes calendar, aquí podrás meter hora real del lunes etc.
+                # "sim_time": ...
+                "top_rooms": top_rooms,
+            }
+
+            # Pintar panel debajo de sliders
+            y0 = menu.get_content_bottom() if hasattr(menu, "get_content_bottom") else 260
+            menu.render_stats_panel(self.menu_surface, y=y0 + 10, stats=stats, width=self.menu_width, height=260)
+
+            # Blit a UI
             self.ui_surface.blit(self.menu_surface, (0,0))
             self._render_ui_overlay()
 

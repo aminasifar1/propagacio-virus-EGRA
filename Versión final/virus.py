@@ -171,10 +171,11 @@ class Virus:
             infected_people = []
             uninfected_people = []
             for p in mundo[nombre].personas:
-                if p.ring:
-                    infected_people.append(p)
-                else:
-                    uninfected_people.append(p)
+                if p.present:
+                    if p.ring:
+                        infected_people.append(p)
+                    else:
+                        uninfected_people.append(p)
 
             # Incrementar el nivel de contagio por aire en la sala
             if len(infected_people) > 0:
