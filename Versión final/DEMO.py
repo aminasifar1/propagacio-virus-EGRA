@@ -508,7 +508,7 @@ def repartir_por_grupos(data: dict, total_por_grupo: int, sep: str = "-") -> dic
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(1280, 720)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1820, 980), parets_path=None):
         pg.init()
         pg.display.set_caption("Epidemiological Simulator - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
@@ -538,7 +538,9 @@ class MotorGrafico:
         self.marker.position = glm.vec3(37.80, 6.05, -124.60)
 
         # InfectionBar
-        #self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
+        self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
+        self.infection_bar.bar_x = self.menu_width + 20
+        self.infection_bar.bar_width = self.WIN_SIZE[0] - self.menu_width - 40
         self.ui_surface = pg.Surface(self.WIN_SIZE, pg.SRCALPHA)
 
         # Clock y control de FPS
@@ -575,6 +577,15 @@ class MotorGrafico:
         self.object = Escenario(self.ctx, self.camera, scene_data, bounding_box, texture_file)
         self.object.app = self
 
+        # PARETS (obj opcional con su .mtl)
+        self.parets_object = None
+        self.show_parets = False
+        if parets_path:
+            parets_data, parets_bbox, parets_texture = load_obj(parets_path)
+            self.parets_object = Escenario(self.ctx, self.camera, parets_data, parets_bbox, parets_texture)
+            self.parets_object.app = self
+            self.show_parets = True
+
         # Persones
         self.person_shader = Person.get_shader(self.ctx)
         self.p_data, p_bbox, self.p_tex_path = load_obj(person_path, default_color=(0.6, 0.6, 0.7))
@@ -593,7 +604,7 @@ class MotorGrafico:
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
         reparto = repartir_por_grupos(self.people_type, total_por_grupo=30)
         for i in reparto:
-            for j in range(reparto[i]):
+            for j in range(1):
                 p = self.create_person(grupo=i)
 
         self.people[0].infectar(1)  # Infectem la primera persona
@@ -755,7 +766,10 @@ class MotorGrafico:
                         self.camera.next_preset()
                     elif e.key == pg.K_h:
                         self.virus.debug_grid = not self.virus.debug_grid
-                        print(f"🧩 Debug grid: {self.virus.debug_grid}")
+                        print(f"Debug grid: {self.virus.debug_grid}")
+                    elif e.key == pg.K_v:
+                        self.show_parets = not self.show_parets
+                        print(f"Parets: {'ON' if self.show_parets else 'OFF'}")
                     elif e.key == pg.K_F5:
                         # Guarda posición + target (hacia donde mira) y lo imprime para copiar/pegar
                         self.camera.capture_current_preset(distance=1.0, append=True)
@@ -807,6 +821,8 @@ class MotorGrafico:
             # ==========================
             light_pos = self.object.update_light_position()
             self.object.render(light_pos=light_pos)
+            if self.show_parets and self.parets_object is not None:
+                self.parets_object.render(light_pos=light_pos)
             self.marker.render()
 
             # Actualizar partículas de rastros a FPS de simulación
@@ -869,11 +885,9 @@ class MotorGrafico:
             # Render UI
             # ==========================
             self.ui_surface.fill((0,0,0,0))
-            # num_infected = sum(1 for p in self.people if hasattr(p,'ring') and p.ring is not None)
+            num_infected = sum(1 for p in self.people if hasattr(p,'ring') and p.ring is not None)
             total_people = len(self.people)
-            if total_people > 0:
-                pass
-                # self.infection_bar.render(self.ui_surface, num_infected, total_people)
+            self.infection_bar.render(self.ui_surface, num_infected, total_people)
             menu.render_menu(self.menu_surface)
             self.ui_surface.blit(self.menu_surface, (0,0))
             self._render_ui_overlay()
@@ -913,6 +927,9 @@ if __name__ == "__main__":
     PERSON_PATH = os.path.join(ROOT_PATH,"Versión final","Models","person.obj")
     TEXURE_PATH = os.path.join(ROOT_PATH,"Versión final","Models","DEF.mtl")
     HORARIS_PATH = os.path.join(ROOT_PATH,"Versión final","data","horaris")
+    PARETS_PATH = os.path.join(ROOT_PATH, "Versión final", "Models", "parets.obj")
+    PARETS_TEXTURE_PATH = os.path.join(ROOT_PATH, "Versión final", "Models", "parets.mtl")
+
     print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     # ==========================
@@ -936,6 +953,6 @@ if __name__ == "__main__":
 
     print(f"[MAIN] Total salas: {len(facultad)}\n")
 
-    motor = MotorGrafico(SCENE_PATH, PERSON_PATH, facultad)
+    motor = MotorGrafico(SCENE_PATH, PERSON_PATH, facultad, parets_path=PARETS_PATH)
     motor.start()
     motor.run()
