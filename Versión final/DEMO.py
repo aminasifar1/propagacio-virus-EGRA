@@ -1,4 +1,5 @@
 import os
+os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
 import json
 import pygame as pg
 import moderngl as mgl
@@ -571,12 +572,14 @@ def repartir_por_grupos(data: dict, total_por_grupo: int, sep: str = "-") -> dic
 #                    MOTOR GRÀFIC
 # =====================================================
 class MotorGrafico:
-    def __init__(self, scene_path, person_path, facultad, win_size=(1640, 1024)):
+    def __init__(self, scene_path, person_path, facultad, win_size=(1280, 720)):
         pg.init()
         pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_DEPTH_SIZE, 24)
+        pg.display.gl_set_attribute(pg.GL_STENCIL_SIZE, 8)
         self.screen = pg.display.set_mode(self.WIN_SIZE, pg.OPENGL | pg.DOUBLEBUF)
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.DEPTH_TEST)
@@ -817,14 +820,16 @@ class MotorGrafico:
                     elif e.key == pg.K_h:
                         self.virus.debug_grid = not self.virus.debug_grid
                         print(f"🧩 Debug grid: {self.virus.debug_grid}")
-                if e.type == pg.KEYDOWN:
-                    if e.key == pg.K_1:
+                    elif e.key == pg.K_F5:
+                        # Guarda posición + target (hacia donde mira) y lo imprime para copiar/pegar
+                        self.camera.capture_current_preset(distance=1.0, append=True)
+                    elif e.key == pg.K_1:
                         self.speed = 1.0
                         print("Velocidad x1")
-                    if e.key == pg.K_2:
+                    elif e.key == pg.K_2:
                         self.speed = 3.0
                         print("Velocidad x3")
-                    if e.key == pg.K_3:
+                    elif e.key == pg.K_3:
                         self.speed = 10.0
                         print("Velocidad x10")
 
