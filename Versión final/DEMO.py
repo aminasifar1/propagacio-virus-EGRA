@@ -602,7 +602,9 @@ class MotorGrafico:
         self.marker.position = glm.vec3(148.65, 8.65, -90.05)
 
         # InfectionBar
-        #self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
+        self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
+        self.infection_bar.bar_x = self.menu_width + 20
+        self.infection_bar.bar_width = self.WIN_SIZE[0] - self.menu_width - 40
         self.ui_surface = pg.Surface(self.WIN_SIZE, pg.SRCALPHA)
 
         # Clock y control de FPS
@@ -932,11 +934,9 @@ class MotorGrafico:
             # Render UI
             # ==========================
             self.ui_surface.fill((0,0,0,0))
-            # num_infected = sum(1 for p in self.people if hasattr(p,'ring') and p.ring is not None)
+            num_infected = sum(1 for p in self.people if hasattr(p,'ring') and p.ring is not None)
             total_people = len(self.people)
-            if total_people > 0:
-                pass
-                # self.infection_bar.render(self.ui_surface, num_infected, total_people)
+            self.infection_bar.render(self.ui_surface, num_infected, total_people)
             menu.render_menu(self.menu_surface)
             self.ui_surface.blit(self.menu_surface, (0,0))
             self._render_ui_overlay()
