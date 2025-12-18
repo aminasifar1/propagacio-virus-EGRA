@@ -38,17 +38,116 @@ class Camera:
 
         self.camera_presets = [
             {'mode': 'free'},
-            # EJEMPLOS: ajusta posiciones/targets según tu escena
             {
                 'mode': 'fixed',
-                'position': glm.vec3(0.0, 15.0, 40.0),
-                'target':   glm.vec3(0.0, 0.0, 0.0),
+                'position': glm.vec3(-9.676, 8.998, -5.207),
+                'target':   glm.vec3(-9.016, 8.687, -5.891),
             },
             {
                 'mode': 'fixed',
-                'position': glm.vec3(40.0, 20.0, 0.0),
-                'target':   glm.vec3(0.0, 0.0, 0.0),
+                'position': glm.vec3(9.738, 4.098, -62.695),
+                'target':   glm.vec3(10.201, 3.863, -61.841),
             },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(17.237, 3.9, -33.186),
+                'target':   glm.vec3(18.196, 3.735, -33.416),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(17.326, 4.317, -61.892),
+                'target':   glm.vec3(18.279, 4.149, -62.145),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(17.185, 4.858, -90.798),
+                'target':   glm.vec3(18.122, 4.667, -91.089),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(17.427, 5.735, -120.0),
+                'target':   glm.vec3(18.38, 5.565, -120.251),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(17.27, 7.063, -46.063),
+                'target':   glm.vec3(18.212, 6.819, -45.83),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(89.303, 7.08, -43.379),
+                'target':   glm.vec3(89.529, 6.811, -44.315),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(89.245, 7.111, -43.363),
+                'target':   glm.vec3(90.2, 6.991, -43.635),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(89.418, 8.155, -83.238),
+                'target':   glm.vec3(89.532, 7.891, -84.196),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(89.418, 8.155, -83.238),
+                'target':   glm.vec3(90.376, 7.99, -83.471),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(16.793, 7.25, -33.163),
+                'target':   glm.vec3(17.751, 7.083, -33.398),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(16.971, 7.681, -61.937),
+                'target':   glm.vec3(17.912, 7.492, -62.219),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(16.976, 8.139, -91.01),
+                'target':   glm.vec3(17.936, 7.984, -91.247),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(16.863, 8.924, -120.083),
+                'target':   glm.vec3(17.819, 8.739, -120.311),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(9.816, 8.783, -73.782),
+                'target':   glm.vec3(10.2, 8.566, -72.885),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(9.985, 9.013, -134.387),
+                'target':   glm.vec3(10.334, 8.755, -133.486),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(77.453, 6.826, -46.193),
+                'target':   glm.vec3(77.259, 6.429, -45.296),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(77.0, 7.753, -74.767),
+                'target':   glm.vec3(76.8, 7.32, -73.889),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(76.915, 8.151, -104.003),
+                'target':   glm.vec3(76.743, 7.714, -103.12),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(77.738, 8.422, -132.775),
+                'target':   glm.vec3(77.49, 8.028, -131.891),
+            },
+            {
+                'mode': 'fixed',
+                'position': glm.vec3(124.535, 10.369, -56.925),
+                'target':   glm.vec3(124.273, 10.162, -55.983),
+            }
         ]
         self.current_preset = 0
         self.mode = 'free' 
@@ -196,3 +295,43 @@ class Camera:
     def update_matrices(self):
         self.m_view = self.get_view_matrix()
         self.m_proj = self.get_projection_matrix()
+
+    def _vec3_literal(self, v: glm.vec3, decimals: int = 3) -> str:
+        return f"glm.vec3({round(float(v.x), decimals)}, {round(float(v.y), decimals)}, {round(float(v.z), decimals)})"
+
+    def capture_current_preset(self, distance: float = 1.0, append: bool = True) -> dict:
+        """
+        Captura un preset FIXED desde el estado actual:
+        - position: posición actual
+        - target: punto hacia donde mira (position + front * distance)
+        """
+        pos = glm.vec3(self.position)
+        target = glm.vec3(self.position + self.front * distance)
+
+        preset = {
+            "mode": "fixed",
+            "position": pos,
+            "target": target,
+        }
+
+        idx = None
+        if append:
+            self.camera_presets.append(preset)
+            idx = len(self.camera_presets) - 1
+
+        # Snippet copiable para dejarlo permanente en self.camera_presets
+        snippet = (
+            "{\n"
+            "    'mode': 'fixed',\n"
+            f"    'position': {self._vec3_literal(pos)},\n"
+            f"    'target':   {self._vec3_literal(target)},\n"
+            "},"
+        )
+
+        if idx is None:
+            print("[CAM] Captured preset (no añadido). Copia y pega esto:")
+        else:
+            print(f"[CAM] Captured preset añadido a camera_presets[{idx}]. Para hacerlo permanente, copia y pega esto:")
+        print(snippet)
+
+        return preset
