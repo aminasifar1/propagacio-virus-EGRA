@@ -289,7 +289,11 @@ class Person:
             self.camino_actual = [666]
             self.indice_camino = 0; self.destino_sala = "pasillo"
         else:
-            sala_origen = self.mundo[self.sala]; sala_destino = self.mundo[destino]
+            try:
+                sala_origen = self.mundo[self.sala]; sala_destino = self.mundo[destino]
+            except KeyError:
+                self.camino_actual = []
+                return
             id_actual = self._waypoint_mas_cercano(sala_origen)
             if isinstance(sala_origen, Clase):
                 if id_actual == sala_origen.salida_id: self.camino_actual = [sala_origen.salida_id, sala_origen.entrada_id]

@@ -33,7 +33,7 @@ class Virus:
 
         # Debug grid: radio en celdas (puedes ajustar 6–12)
         self.debug_grid = False
-        self.debug_grid_radius_cells = 8
+        self.debug_grid_radius_cells = 20
 
         # Snapshot global (unión de todas las salas en el último tick)
         self._debug_grid_snapshot = {"cell_size": None, "occupied": set(), "cell_y": {}}
