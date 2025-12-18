@@ -510,7 +510,7 @@ def repartir_por_grupos(data: dict, total_por_grupo: int, sep: str = "-") -> dic
 class MotorGrafico:
     def __init__(self, scene_path, person_path, facultad, win_size=(1280, 720)):
         pg.init()
-        pg.display.set_caption("3D Viewer - WASD moverte, TAB soltar ratón")
+        pg.display.set_caption("Epidemiological Simulator - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
@@ -894,7 +894,7 @@ class MotorGrafico:
                 self.fps = self.frame_count/(time.time()-self.last_time)
                 self.frame_count=0
                 self.last_time=time.time()
-                pg.display.set_caption(f"3D Viewer - FPS: {self.fps:.1f} - WASD moverte, TAB soltar ratón")
+                pg.display.set_caption(f"Epidemiological Simulator - FPS: {self.fps:.1f} - WASD moverte, TAB soltar ratón")
 
             # si debug grid activat
             if self.virus.debug_grid:
