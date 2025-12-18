@@ -178,7 +178,7 @@ class Virus:
                         uninfected_people.append(p)
 
             # Incrementar el nivel de contagio por aire en la sala
-            if len(infected_people) > 0:
+            if len(infected_people) > 0 and nombre != "pasillo":
                 mundo[nombre].contagio_aire += self.contagio_aire * len(infected_people)
                 if mundo[nombre].contagio_aire > 1.0:
                     mundo[nombre].contagio_aire = 1.0
