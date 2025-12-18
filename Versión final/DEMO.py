@@ -192,157 +192,93 @@ def export_pasillo_json_keep_ids(nodes, adj, out_path, *, sala_id=0, salida=666,
     return data
 
 RAW_POINTS = r"""
-	- (puerta) 0: -0.50, -0.10, -15.15 - (1,2,666
-	- (pitagoras) 1: 4.90, -0.10, -15.15 - (0,2,
-	- (escalera principal) 2: 7.70, -0.10, -13.65 - (0,1,3,5
-	- (pasillo izquierda abajo) 3: 10.60, -0.10, -13.65 - (2,6
-	- (pasillo medio abajo) 4: 13.90, -0.10, -13.65 - (3,6
-	- (principio escalera) 5: 7.70, -0.10, -14.80 - (2,39)
-	- (principio primera rampa izquierda) 6: 10.60, -0.10, -18.00 - (3,4,7,8,9)
-	- (principio primera rampa medio) 7: 13.90, -0.10, -18.00 - (3,4,6,8,9)
-	- (final primera rampa izquierda) 8: 10.60, 0.45, -30.10 - (6,7,9,10,12,13)
-	- (final primera rampa medio) 9: 13.90, 0.45, -30.10 - (6,7,8,10,12)
-	- (final pitagoras) 10: 10.60, 0.45, -31.25 - (8,9,11,13,12)
-	- (elbow pitagoras) 11: 4.90, 0.45, -31.25 - (1,10)
-	- (inicio Q1/0) 12: 13.90, 0.45, -34.10 - (10,9,8,
-	- (principio segunda rampa) 13: 13.90, 0.45, -46.95 - (10,8,12,14)
-	- (final segunda rampa) 14: 13.90, 1.45, -58.75 - (13,15
-	- (inicio Q2/0) 15: 13.90, 1.45, -62.70 - (14,16
-	- (inicio tercera rampa) 16: 13.90, 1.45, -76.10 - (15,17,
-	- (final tercera rampa) 17: 13.90, 2.00, -87.85 - (16,18,
-	- (inicio Q3/0) 18: 13.90, 2.00, -91.85 - (17,19,
-	- (inicio cuarta rampa) 19: 13.90, 2.00, -104.20 - (18,20
-	- (final cuarta rampa) 20: 13.90, 2.60, -117.00 - (19,21
-	- (incio Q4/0) 21: 13.90, 2.60, -121.05 - (20,22
-	- (entrada rampa Q4/0) 22: 10.60, 2.60, -118.25 - (20,21,23)
-	- (abajo escaleras Q4) 23: 4.85, 2.60, -118.25 - (22,24)
-	- (inicio escaleras Q4) 24: 4.85, 2.60, -115.50 - (23,
-	- (entrada rampa Q3/0) 25: 10.60, 2.00, -89.10 - (17,18,19,26)
-	- (abajo escaleras Q3) 26   : 4.85, 2.00, -89.10 - (25,27)
-	- (inicio escaleras Q3) 27: 4.85, 2.00, -86.20 - (26,
-	- (entrada rampa Q2/0) 28: 10.60, 1.45, -60.00 - (14,15,16,29)
-	- (abajo escaleras Q2) 29: 4.85, 1.45, -60.00 - (28,30)
-	- (inicio escaleras Q2) 30: 4.85, 1.45, -57.20 - (29,
-	- (final Q1/0) 31: 74.30, 0.45, -34.10 - (12,32
-	- (incio escaleras final Q1/0) 32: 76.15, 0.45, -38.95 - (31,
-	- (final Q2/0) 33: 74.30, 1.45, -62.70 - (15,34
-	- (incio escaleras final Q2/0) 34: 76.15, 1.45, -68.15 - (33,
-	- (final Q3/0) 35: 74.30, 2.00, -91.85 - (18,36
-	- (incio escaleras final Q3/0) 36: 76.15, 2.00, -97.70 - (35,
-	- (final Q4/0) 37: 74.30, 2.60, -121.05 - (21,38
-	- (incio escaleras final Q4/0) 38: 76.15, 2.60, -126.80 - (37,
-	- (medio 1 escalera) 39: 7.70, 2.00, -20.70 - (5,40)
-	- (medio 2 escalera) 40: 7.70, 2.00, -23.50 - (39,41)
-	- (final escalera) 41: 7.70, 4.30, -29.90 - (40,42)
-	- (inicio pasillo 1) 42: 10.60, 4.30, -31.25 - (41,43,44)
-	- (inicio Q1/1) 43: 13.90, 4.30, -34.10 - (42
-	- (principio segunda rampa 1) 44: 10.60, 4.30, -46.95 - (44,45)
-	- (final segunda rampa 1) 45: 10.60, 4.85, -58.60 - (44,46,47)
-	- (entrada rampa Q2/1) 46: 10.60, 4.85, -60.00 - (45,47
-	- (inicio Q2/1) 47: 13.90, 4.85, -62.70 - (45,46
-	- (inicio tercera rampa 1) 48: 10.60, 4.85, -76.25 - (46,49
-	- (final tercera rampa 1) 49: 10.60, 5.40, -87.80 - (48,50,51
-	- (entrada rampa Q3/1) 50: 10.60, 5.40, -89.10 - (49,51,52
-	- (inicio Q3/1) 51: 13.90, 5.40, -91.85 - (50,49
-	- (inicio cuarta rampa 1) 52: 10.60, 5.40, -104.30 - (50,53
-	- (final cuarta rama 1) 53: 10.60, 6.05, -117.00 - (52,54,55
-	- (entrada rampa Q4/1) 54:10.60, 6.05, -118.25 - (53,55
-	- (incio Q4/1) 55: 13.90, 6.05, -121.05 - (54,
-	- (final Q1/1) 56: 74.30, 4.30, -34.10 - (43,
-	- (final Q2/1) 57: 74.30, 4.85, -62.70 - (47,
-	- (final Q3/1) 58: 74.30, 5.40, -91.85 - (51,
-	- (final Q4/1) 59: 74.30, 6.05, -121.05 - (55
-	- (medio escaleras Q4) 60: 4.85, 3.25, -53.00 - (61,30)
-	- (medio 1 escaleras Q2) 61: 6.50, 3.25, -52.15 - (60,62)
-	- (medio 2 escaleras Q2) 62: 8.40, 3.25, -52.95 - (61,63)
-	- (final escaleras Q2) 63: 8.40, 4.85, -58.05 - (62,46)
-	- (final escaleras Q3) 64: 8.40, 5.45, -87.25 - (50,65)
-	- (medio 2 escaleras Q3) 65: 8.40, 3.80, -82.10 - (64,66)
-	- (medio 1 escaleras Q3) 66: 6.50, 3.80, -81.40 - (65,67)
-	- (medio escaleras Q3) 67: 4.85, 3.80, -82.10 - (66,27)
-	- (medio escaleras Q4) 68: 4.85, 4.45, -111.30 - (24,69)
-	- (medio 1 escaleras Q4) 69: 6.50, 4.45, -110.350 - (68,70)
-	- (medio 2 escaleras Q4) 70: 8.40, 4.45, -111.30 - (69,71)
-	- (final escaleras Q4) 71: 8.40, 6.05, -116.45 - (70,54)
-	- (medio escaleras final Q1) 72: 76.15, 2.65, -44.30 - (73,32)
-	- (medio 1 escaleras final Q1) 73: 75.15, 2.65, -44.80 - (72,74)
-	- (medio 2 escaleras final Q1) 74: 74.15, 2.65, -44.30 - (73,75)
-	- (final escaleras final Q1) 75: 74.15, 4.30, -39.15 - (74,56)
-	- (final escaleras final Q2) 76: 74.15, 4.85, -67.45 - (77,57)
-	- (medio 2 escaleras final Q2) 77: 74.15, 3.20, -72.60 - (76,78)
-	- (medio 1 escaleras final Q2) 78: 75.15, 3.20, -73.10 - (77,79)
-	- (medio escaleras final Q2) 79: 76.15, 3.20, -72.60 - (78,34)
-	- (final escaleras final Q3) 80: 74.15, 5.40, -96.95 - (81,58)
-	- (medio 2 escaleras final Q3) 81: 74.15, 3.75, -102.10 - (80,82)
-	- (medio 1 escaleras final Q3) 82: 75.15, 3.75, -102.60 - (81,83)
-	- (medio escaleras final Q3) 83: 76.15, 3.75, -102.10 - (82,36)
-	- (medio escaleras final Q4) 84: 76.15, 4.40, -131.25 - (85,38)
-	- (medio 1 escaleras final Q4) 85: 75.15, 4.40, -131.75 - (84,86)
-	- (medio 2 escaleras final Q4) 86: 74.15, 4.40, -131.25 - (85,87)
-	- (final escaleras final Q4) 87: 74.15, 6.10, -126.15 - (86,59)
-	- (inicio pasillo para Q5-Q6) 89: 79.05, 4.30, -34.10 - (56,90)
-	- (punto entrada pasillo Q5) 90: 79.05, 4.40, -44.70 - (89,91)
-	- (punto pasillo Q5-Q6 1a rampa inicio) 91: 79.05, 4.40, -47.90 - (90,92)
-	- (punto pasillo Q5-Q6 1a rampa fin) 92: 79.05, 5.00, -58.45 - (91,93)
-	- (pasillo 2 despues del punto final Q5-Q6) 93: 79.05, 5.00, -62.75 - (92,94)
-	- (punto pasillo Q5-Q6 2a rampa inicio) 94: 79.05, 5.00, -76.65 - (93,95)
-	- (punto pasillo entrada Q6) 95: 79.05, 5.45, -84.40 - (94,96)
-	- (punto pasillo Q5-Q6 2a rampa final) 96: 79.05, 5.55, -87.60 - (95,97)
-	- (punto pasillo despues rampa mitad) 97: 79.05, 5.55, -96.45 - (96,98)
-	- (punto rampa 3a inicio Q5-Q6) 98: 79.05, 5.55, -104.80 - (97,99)
-	- (punto rampa 3a final Q5-Q6) 99: 79.05, 6.20, -116.80 - (98,100)
-	- (punto final pasillo Q5-Q6) 100: 79.05, 6.20, -121.10 - (99,59)
-	- (final Q5/1) 101: 145.90, 4.40, -44.85 - (102)
-	- (inicio Q5/1) 102: 92.20, 4.40, -44.85 - (90,
-	- (inicio Q5/0) 103: 92.20, 0.95, -44.85 - ()
-	- (inicio Q5/2) 104: 92.05, 7.80, -44.85  - ()
-	- (inici escales Q5/2 arriba) 105: 148.40, 7.80, -50.45 - (112,
-	- (entemig escales Q5/2) 106: 148.40, 6.10, -55.10 - (105,107)
-	- (entremig escales q5/2 2) 107: 149.05, 6.10, -55.75 - (106,108)
-	- (entremig escales q5/2 3) 108: 149.85, 6.10, -55.80 - (107,109)
-	- (entremig escales q5/2 4) 109: 150.65, 6.10, -55.00 - (108,110)
-	- (final escales q5/1) 110: 150.65, 4.30, -51.00 - (109,111)
-	- (inici escales q5/1) 111: 150.65, 4.30, -44.85 - (110,101)
-	- (final Q5/2) 112: 148.40, 7.80, -44.85 - (104,
-    - (inicio escaleras derecha Q5/2) 113: 90.40, 7.80, -45.00 - (104,114)
-	- (escaleras derecha Q5/2 2do punto) 114: 90.40, 7.80, -50.20 - (113,115)
-	- (escaleras derecha Q5/2 3er punto) 115: 90.40, 6.10, -55.05 - (114,116)
-	- (escaleras derecha Q5/2 4to punto) 116: 90.85, 6.10, -55.80 - (115,117)
-	- (escaleras derecha Q5/2 5to punto) 117: 91.65, 6.10, -55.80 - (116,118)
-	- (escaleras derecha Q5/2 6to punto) 118: 92.20, 6.10, -55.35 - (117,119)
-	- (final escaleras derecha Q5/2 abajo) 119: 92.20, 4.40, -51.10 - (118,102)
-	- (inicio escaleras derecha Q2/1) 120: 90.30, 4.35, -49.95 - (102,121)
-	- (escaleras derecha Q2/1 2do punto) 121: 90.30, 2.70, -55.10 - (120,122)
-	- (escaleras derecha Q2/1 3er punto) 122: 90.75, 2.70, -55.80 - (121,123)
-	- (escaleras derecha Q2/1 4to punto) 123: 91.85, 2.70, -55.80 - (122,124)
-	- (escaleras derecha Q2/1 5to punto) 124: 92.30, 2.70, -55.05 - (123,125)
-	- (final escaleras derecha Q2/1) 125: 92.30, 0.90, -51.00 - (124,103)
-    - (inicio entrada mini rampa Q6/1) 126: 84.25, 5.30, -84.40 - (95,127)
-	- (final mini rampa Q6/1) 127: 88.20, 5.25, -84.00 - (126,128)
-	- (punto entrada inicio Q6/1) 128: 91.05, 5.25, -84.00 - (127,129, 137,138)
-	- (punto final Q6/1) 129: 149.35, 5.25, -84.00 - (128)
-	- (punto final Q6/2) 130: 149.35, 8.70, -84.00 - (131)
-	- (punto inicio Q6/2) 131: 91.05, 8.70, -84.00 - (130,132)
-    - (inicio escaleras derecha Q6/2 arriba) 132: 90.30, 8.70, -89.70 - (131,133)
-	- (escaleras Q6/2 2do punto) 133: 90.30, 7.05, -94.55 - (132,134)
-	- (escaleras Q6/2 3er punto) 134: 90.70, 7.05, -95.55 - (133,135)
-	- (escaleras Q6/2 4to punto) 135: 91.85, 7.05, -95.55 - (134,136)
-	- (escaleras Q6/2 5to punto) 136: 92.30, 7.05, -94.25 - (135,137)
-	- (final escalera Q6/2 hacia Q6/1) 137: 92.30, 5.25, -90.65 - (136,138,128)
-    - (inicio escaleras derecha Q6/1 arriba) 138: 90.25, 5.25, -89.95 - (137,139,128)
-	- (escaleras Q6/1 2do punto) 139: 90.25, 3.60, -94.50 - (138,140)
-	- (escaleras Q6/1 3er punto) 140: 90.80, 3.60, -95.50 - (139,141)
-	- (escaleras Q6/1 4to punto) 141: 91.75, 3.65, -95.50 - (140,142)
-	- (escaleras Q6/1 5to punto) 142: 92.40, 3.60, -94.40 - (141,143)
-	- (final escaleras Q6/1 hacia Q6/0) 143: 92.40, 1.80, -90.65 - (142,144)
-	- (inicio Q6/0) 144: 92.40, 1.80, -84.20 - (143)
-    - (inicio escaleras izquierda Q6/2 final pasillo) 145: 148.65, 8.70, -90.05 - (130,146)
-	- (escaleras izquierda Q6/2 2do punto) 146: 148.65, 7.05, -94.60 - (145,147)
-	- (escaleras izquierda Q6/2 3er punto) 147: 149.10, 7.05, -95.35 - (146,148)
-	- (escaleras izquierda Q6/2 4to punto) 148: 150.05, 7.05, -95.35 - (147,149)
-	- (escaleras izquierda Q6/2 5to punto) 149: 150.65, 7.05, -94.25 - (148,150)
-	- (final escaleras izquierda Q6/1) 150: 150.65, 5.25, -90.50 - (149,129)
-	- (salida) 666: -0.50, -0.10, -18.70 - (0)
+	- (puerta) 340001: 54.55, 2.00, -92.55 - (340002)
+    - (dentro) 340002: 54.55, 2.00, -93.80 - (340001,340003,340004,340005,340006,340007,340008,340009,340010,340011,340012,340013)
+    - (asiento) 340003: 37.80, 6.05, -123.275 - (340004)
+    - (asiento) 340004: 37.80, 6.05, -124.375 - (340005)
+    - (asiento) 340005: 37.80, 6.05, -125.30 - (340006
+    - (asiento) 340006: 37.80, 6.05, -126.25 - (340007)
+    - (asiento) 340007: 37.80, 6.05, -127.20 - (340008)
+    - (asiento) 340008: 37.80, 6.05, -128.10 - (340009)
+    - (asiento) 340009: 37.80, 6.05, -129.15 - (340010)
+    - (asiento) 340010: 37.80, 6.05, -130.05 - (340011)
+    - (asiento) 340011: 37.80, 6.05, -130.95 - (340012)
+    - (asiento) 340012: 37.80, 6.05, -131.90 - (340013)
+    - (pasillo) 340013: 37.80, 6.05, -132.80 - (340014, 340001)
+    - (pasillo) 340014: 36.15, 6.05, -132.80 - (340013, 340015)
+    - (pasillo) 340015: 34.20, 6.05, -132.80 - (340014, 340016)
+    - (pasillo) 340016: 32.20, 6.05, -132.80 - (340015, 340017)
+    - (pasillo) 340017: 30.40, 6.05, -132.80 - (340016, 340018)
+    - (asiento) 340027: 30.40, 6.05, -123.275 - (340026)
+    - (asiento) 340026: 30.40, 6.05, -124.375 - (340027)
+    - (asiento) 340025: 30.40, 6.05, -125.30 - (340026)
+    - (asiento) 340024: 30.40, 6.05, -126.25 - (340025)
+    - (asiento) 340023: 30.40, 6.05, -127.20 - (340024)
+    - (asiento) 340022: 30.40, 6.05, -128.10 - (340023)
+    - (asiento) 340021: 30.40, 6.05, -129.15 - (340022)
+    - (asiento) 340020: 30.40, 6.05, -130.05 - (340021)
+    - (asiento) 340019: 30.40, 6.05, -130.95 - (340020)
+    - (asiento) 340018: 30.40, 6.05, -131.90 - (340019)
+    - (asiento) 340028: 36.55, 6.05, -123.275 - (340029,340038,340039)
+    - (asiento) 340029: 36.55, 6.05, -124.375 - (340030,340038,340039,340040)
+    - (asiento) 340030: 36.55, 6.05, -125.30 - (340031,340039,340040,340041)
+    - (asiento) 340031: 36.55, 6.05, -126.25 - (340032,340042,340041,340040)
+    - (asiento) 340032: 36.55, 6.05, -127.20 - (340033,340042,340041,340043)
+    - (asiento) 340033: 36.55, 6.05, -128.10 - (340034,340042,340044,340043)
+    - (asiento) 340034: 36.55, 6.05, -129.15 - (340035,340045,340044,340043)
+    - (asiento) 340035: 36.55, 6.05, -130.05 - (340036,340044,340045,340046)
+    - (asiento) 340036: 36.55, 6.05, -130.95 - (340037,340045,340046,340047)
+    - (asiento) 340037: 36.55, 6.05, -131.90 - (340014,340046,340047)
+    - (asiento) 340038: 35.80, 6.05, -123.275 - (340039)
+    - (asiento) 340039: 35.80, 6.05, -124.375 - (340040)
+    - (asiento) 340040: 35.80, 6.05, -125.30 - (340041)
+    - (asiento) 340041: 35.80, 6.05, -126.25 - (340042)
+    - (asiento) 340042: 35.80, 6.05, -127.20 - (340043)
+    - (asiento) 340043: 35.80, 6.05, -128.10 - (340044)
+    - (asiento) 340044: 35.80, 6.05, -129.15 - (340045)
+    - (asiento) 340045: 35.80, 6.05, -130.05 - (340046)
+    - (asiento) 340046: 35.80, 6.05, -130.95 - (340047)
+    - (asiento) 340047: 35.80, 6.05, -131.90 - (340014)
+    - (asiento) 340048: 34.55, 6.05, -123.275 - (340049,340058,340059)
+    - (asiento) 340049: 34.55, 6.05, -124.375 - (340050,340058,340059,340060)
+    - (asiento) 340050: 34.55, 6.05, -125.30 - (340051,340059,340060,340061)
+    - (asiento) 340051: 34.55, 6.05, -126.25 - (340052,340062,340061,340060)
+    - (asiento) 340052: 34.55, 6.05, -127.20 - (340053,340062,340061,340063)
+    - (asiento) 340053: 34.55, 6.05, -128.10 - (340054,340062,340064,340063)
+    - (asiento) 340054: 34.55, 6.05, -129.15 - (340055,340065,340064,340063)
+    - (asiento) 340055: 34.55, 6.05, -130.05 - (340056,340064,340065,340066)
+    - (asiento) 340056: 34.55, 6.05, -130.95 - (340057,340065,340066,340067)
+    - (asiento) 340057: 34.55, 6.05, -131.90 - (340015,340066,340067)
+    - (asiento) 340058: 33.80, 6.05, -123.275 - (340059)
+    - (asiento) 340059: 33.80, 6.05, -124.375 - (340060)
+    - (asiento) 340060: 33.80, 6.05, -125.30 - (340061)
+    - (asiento) 340061: 33.80, 6.05, -126.25 - (340062)
+    - (asiento) 340062: 33.80, 6.05, -127.20 - (340063)
+    - (asiento) 340063: 33.80, 6.05, -128.10 - (340064)
+    - (asiento) 340064: 33.80, 6.05, -129.15 - (340065)
+    - (asiento) 340065: 33.80, 6.05, -130.05 - (340066)
+    - (asiento) 340066: 33.80, 6.05, -130.95 - (340067)
+    - (asiento) 340067: 33.80, 6.05, -131.90 - (340015)
+    - (asiento) 340068: 32.50, 6.05, -123.275 - (340069,340078,340079)
+    - (asiento) 340069: 32.50, 6.05, -124.375 - (340070,340078,340079,340080)
+    - (asiento) 340070: 32.50, 6.05, -125.30 - (340071,340079,340080,340081)
+    - (asiento) 340071: 32.50, 6.05, -126.25 - (340072,340082,340081,340080)
+    - (asiento) 340072: 32.50, 6.05, -127.20 - (340073,340082,340081,340083)
+    - (asiento) 340073: 32.50, 6.05, -128.10 - (340074,340082,340084,340083)
+    - (asiento) 340074: 32.50, 6.05, -129.15 - (340075,340085,340084,340083)
+    - (asiento) 340075: 32.50, 6.05, -130.05 - (340076,340084,340085,340086)
+    - (asiento) 340076: 32.50, 6.05, -130.95 - (340077,340085,340086,340087)
+    - (asiento) 340077: 32.50, 6.05, -131.90 - (340016,340086,340087)
+    - (asiento) 340078: 31.80, 6.05, -123.275 - (340079)
+    - (asiento) 340079: 31.80, 6.05, -124.375 - (340080)
+    - (asiento) 340080: 31.80, 6.05, -125.30 - (340081)
+    - (asiento) 340081: 31.80, 6.05, -126.25 - (340082)
+    - (asiento) 340082: 31.80, 6.05, -127.20 - (340083)
+    - (asiento) 340083: 31.80, 6.05, -128.10 - (340084)
+    - (asiento) 340084: 31.80, 6.05, -129.15 - (340085)
+    - (asiento) 340085: 31.80, 6.05, -130.05 - (340086)
+    - (asiento) 340086: 31.80, 6.05, -130.95 - (340087)
+    - (asiento) 340087: 31.80, 6.05, -131.90 - (340016)
     """
 
 nodes, edges, adj = parse_graph_from_text(RAW_POINTS)
@@ -599,7 +535,7 @@ class MotorGrafico:
 
         # Marker
         self.marker = Marker(self.ctx, self.camera)
-        self.marker.position = glm.vec3(148.65, 8.65, -90.05)
+        self.marker.position = glm.vec3(37.80, 6.05, -124.60)
 
         # InfectionBar
         #self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
@@ -615,7 +551,7 @@ class MotorGrafico:
         self.show_bboxes = False
 
         # SimClock (tiempo del mundo)
-        self.day_sim_seconds = 2 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
+        self.day_sim_seconds = 0.05 * 60  # cámbialo a 5*60 o 30*60 cuando quieras
         self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
         self.exposure_scale = 1.0       # pasillo por defecto
         self.class_exposure_scale = 6.0 # ejemplo: 20 min sim = 120 min real -> 6x
@@ -655,7 +591,7 @@ class MotorGrafico:
         self.tiempo_persona = 0.0
         self.intervalo_spawn = 4.0
         self.people_type = cargar_diccionarios_desde_carpeta(HORARIS_PATH)
-        reparto = repartir_por_grupos(self.people_type, total_por_grupo=20)
+        reparto = repartir_por_grupos(self.people_type, total_por_grupo=30)
         for i in reparto:
             for j in range(reparto[i]):
                 p = self.create_person(grupo=i)
@@ -926,7 +862,8 @@ class MotorGrafico:
                         p.update(dt_sim)
                 # Render de la persona
                 # p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
-                p.render(self.person_shader, self.person_vao_tri, self.person_vao_line, light_pos, self.person_texture)
+                if p.present:
+                    p.render(self.person_shader, self.person_vao_tri, self.person_vao_line, light_pos, self.person_texture)
 
             # ==========================
             # Render UI
@@ -941,13 +878,13 @@ class MotorGrafico:
             self.ui_surface.blit(self.menu_surface, (0,0))
             self._render_ui_overlay()
 
-            render_graph(
-                self.ctx,
-                self.graph,
-                np.array(self.camera.m_proj * self.camera.m_view, dtype="f4").T,
-                point_size=12.0,
-                overlay=False
-            )
+            # render_graph(
+            #     self.ctx,
+            #     self.graph,
+            #     np.array(self.camera.m_proj * self.camera.m_view, dtype="f4").T,
+            #     point_size=12.0,
+            #     overlay=False
+            # )
     
             # ==========================
             # FPS

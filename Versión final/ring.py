@@ -198,7 +198,7 @@ class Ring:
         self.shader['view_pos'].value = tuple(self.camera.position)
 
     def update(self, position):
-        position.y = self.altura
+        # position.y = self.altura
         self.position = position
 
     def destroy(self):
