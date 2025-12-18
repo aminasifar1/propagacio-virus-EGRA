@@ -288,7 +288,7 @@ class Camera:
 
     def get_projection_matrix(self):
         if self.perspective:
-            return glm.perspective(glm.radians(45), self.aspect_ratio, 0.1, 100)
+            return glm.perspective(glm.radians(45), self.aspect_ratio, 0.1, 1000)
         else:
             return glm.ortho(-8, 8, -8, 8, 0.1, 100)
 
