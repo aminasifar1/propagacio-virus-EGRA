@@ -289,9 +289,12 @@ class SimulationVisualizer:
             return
 
         room_counts = self.infections_df[room_col].value_counts().head(top_n)
+        
+        # Filter out 'unknown' rooms
+        room_counts = room_counts[room_counts.index != 'unknown']
 
         if len(room_counts) == 0:
-            print("No room data available to plot")
+            print("No room data available to plot (only 'unknown' rooms)")
             return
 
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -310,68 +313,245 @@ class SimulationVisualizer:
         plt.savefig(os.path.join(self.export_dir, 'most_contagious_rooms.png'), dpi=300)
         print("Saved: most_contagious_rooms.png")
         plt.close()
+    
+    def plot_school_heatmap(self):
+        """Plot heatmap of school showing infection hotspots by room."""
+        if self.infections_df is None or len(self.infections_df) == 0:
+            print("No infection data to plot heatmap")
+            return
+        
+        # Check for room column
+        room_col = None
+        for candidate in ["room", "location", "room_id", "classroom"]:
+            if candidate in self.infections_df.columns:
+                room_col = candidate
+                break
+        
+        if room_col is None:
+            print("No room column found - cannot create heatmap")
+            return
+        
+        # Get infection counts per room
+        room_counts = self.infections_df[room_col].value_counts()
+        room_counts = room_counts[room_counts.index != 'unknown']
+        
+        if len(room_counts) == 0:
+            print("No valid room data for heatmap")
+            return
+        
+        # Simple visualization - grid layout based on room names
+        # Extract building/floor info from room codes like Q1-0007, Q2-1003, etc.
+        room_data = []
+        for room, count in room_counts.items():
+            if '-' in str(room):
+                parts = str(room).split('-')
+                building = parts[0]  # Q1, Q2, Q3, Q4
+                floor_room = parts[1] if len(parts) > 1 else '0000'
+                floor = int(floor_room[0]) if floor_room else 0
+                room_num = int(floor_room[1:]) if len(floor_room) > 1 else 0
+                room_data.append({
+                    'name': room,
+                    'building': building,
+                    'floor': floor,
+                    'room_num': room_num,
+                    'infections': count
+                })
+        
+        if not room_data:
+            print("Could not parse room structure for heatmap")
+            return
+        
+        # Create pivot table for heatmap
+        df_heatmap = pd.DataFrame(room_data)
+        pivot = df_heatmap.pivot_table(
+            values='infections',
+            index='floor',
+            columns='building',
+            aggfunc='sum',
+            fill_value=0
+        )
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        sns.heatmap(
+            pivot,
+            annot=True,
+            fmt='.0f',
+            cmap='YlOrRd',
+            cbar_kws={'label': 'Number of Infections'},
+            linewidths=1,
+            linecolor='gray',
+            ax=ax
+        )
+        
+        ax.set_xlabel('Building', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Floor', fontsize=12, fontweight='bold')
+        ax.set_title('School Heatmap - Infection Hotspots by Building & Floor', 
+                     fontsize=14, fontweight='bold')
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.export_dir, 'school_heatmap.png'), dpi=300)
+        print("Saved: school_heatmap.png")
+        plt.close()
 
-    def plot_population_stats(self):
-        """Plot population statistics (min, max, final state)."""
+    def plot_total_population(self):
+        """Plot total population over time."""
         if self.states_df is None:
             print("No states data to plot")
             return
 
-        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        fig, ax = plt.subplots(figsize=(12, 6))
         
-        # Total population over time
-        axes[0, 0].plot(self.states_df['time'], self.states_df['total_people'], 
-                       color='blue', linewidth=2, marker='o', markersize=3)
-        axes[0, 0].fill_between(self.states_df['time'], self.states_df['total_people'], 
-                               alpha=0.3, color='blue')
-        axes[0, 0].set_title('Total Population Over Time', fontweight='bold')
-        axes[0, 0].set_xlabel('Time (s)')
-        axes[0, 0].set_ylabel('People')
-        axes[0, 0].grid(True, alpha=0.3)
+        ax.plot(self.states_df['time'], self.states_df['total_people'], 
+                color='#3498db', linewidth=2.5, marker='o', markersize=4, 
+                markevery=max(1, len(self.states_df)//20))
+        ax.fill_between(self.states_df['time'], self.states_df['total_people'], 
+                        alpha=0.3, color='#3498db')
         
-        # Infection percentage
-        infection_pct = (self.states_df['infected'] / self.states_df['total_people'] * 100)
-        axes[0, 1].plot(self.states_df['time'], infection_pct, 
-                       color='red', linewidth=2, marker='x', markersize=4)
-        axes[0, 1].fill_between(self.states_df['time'], infection_pct, 
-                               alpha=0.3, color='red')
-        axes[0, 1].set_title('Infection Percentage Over Time', fontweight='bold')
-        axes[0, 1].set_xlabel('Time (s)')
-        axes[0, 1].set_ylabel('% Infected')
-        axes[0, 1].set_ylim([0, 100])
-        axes[0, 1].grid(True, alpha=0.3)
+        ax.set_title('Total Population Over Time', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Time (seconds)', fontsize=12)
+        ax.set_ylabel('Number of People', fontsize=12)
+        ax.grid(True, alpha=0.3, linestyle='--')
         
-        # Final state pie chart
-        final_state = self.states_df.iloc[-1]
-        healthy = final_state['total_people'] - final_state['infected']
-        sizes = [healthy, final_state['infected']]
-        labels = [f"Healthy\n({int(healthy)})", f"Infected\n({int(final_state['infected'])})"]
-        colors_pie = ['#2ecc71', '#e74c3c']
-        axes[1, 0].pie(sizes, labels=labels, colors=colors_pie, autopct='%1.1f%%', 
-                      startangle=90, textprops={'fontsize': 11, 'fontweight': 'bold'})
-        axes[1, 0].set_title('Final Population State', fontweight='bold')
-        
-        # Statistics text
-        axes[1, 1].axis('off')
-        stats_text = f"""
-        SIMULATION STATISTICS
-        
-        Duration: {self.states_df['time'].max():.1f} seconds
-        Max Population: {self.states_df['total_people'].max()} people
-        Final Population: {final_state['total_people']} people
-        
-        Max Infections: {self.states_df['infected'].max()} people
-        Final Infections: {int(final_state['infected'])} people
-        
-        Attack Rate: {(final_state['infected'] / final_state['total_people'] * 100):.1f}%
-        """
-        axes[1, 1].text(0.1, 0.5, stats_text, fontsize=11, family='monospace',
-                       verticalalignment='center', bbox=dict(boxstyle='round', 
-                       facecolor='wheat', alpha=0.5))
+        # Add max population annotation
+        max_pop = self.states_df['total_people'].max()
+        max_idx = self.states_df['total_people'].idxmax()
+        max_time = self.states_df.loc[max_idx, 'time']
+        ax.annotate(f'Max: {int(max_pop)} people', 
+                   xy=(max_time, max_pop), 
+                   xytext=(10, 10), 
+                   textcoords='offset points',
+                   bbox=dict(boxstyle='round,pad=0.5', facecolor='yellow', alpha=0.7),
+                   arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
         
         plt.tight_layout()
-        plt.savefig(os.path.join(self.export_dir, 'population_stats.png'), dpi=300)
-        print("Saved: population_stats.png")
+        plt.savefig(os.path.join(self.export_dir, 'total_population.png'), dpi=300)
+        print("Saved: total_population.png")
+        plt.close()
+    
+    def plot_infection_percentage(self):
+        """Plot infection percentage over time."""
+        if self.states_df is None:
+            print("No states data to plot")
+            return
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        # Calculate infection percentage, handling division by zero
+        infection_pct = (self.states_df['infected'] / self.states_df['total_people'].replace(0, 1) * 100)
+        infection_pct = infection_pct.fillna(0)
+        
+        ax.plot(self.states_df['time'], infection_pct, 
+                color='#e74c3c', linewidth=2.5, marker='x', markersize=5,
+                markevery=max(1, len(self.states_df)//20))
+        ax.fill_between(self.states_df['time'], infection_pct, 
+                        alpha=0.3, color='#e74c3c')
+        
+        ax.set_title('Infection Percentage Over Time', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Time (seconds)', fontsize=12)
+        ax.set_ylabel('Percentage Infected (%)', fontsize=12)
+        ax.set_ylim([0, 105])
+        ax.grid(True, alpha=0.3, linestyle='--')
+        
+        # Add peak infection annotation
+        if infection_pct.max() > 0:
+            peak_pct = infection_pct.max()
+            peak_idx = infection_pct.idxmax()
+            peak_time = self.states_df.loc[peak_idx, 'time']
+            ax.annotate(f'Peak: {peak_pct:.1f}%', 
+                       xy=(peak_time, peak_pct), 
+                       xytext=(10, -20), 
+                       textcoords='offset points',
+                       bbox=dict(boxstyle='round,pad=0.5', facecolor='orange', alpha=0.7),
+                       arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.export_dir, 'infection_percentage.png'), dpi=300)
+        print("Saved: infection_percentage.png")
+        plt.close()
+    
+    def plot_final_state_pie(self):
+        """Plot final population state as pie chart."""
+        if self.states_df is None:
+            print("No states data to plot")
+            return
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        final_state = self.states_df.iloc[-1]
+        healthy = final_state['total_people'] - final_state['infected']
+        
+        sizes = [healthy, final_state['infected']]
+        labels = [f"Healthy\n{int(healthy)} people", f"Infected\n{int(final_state['infected'])} people"]
+        colors_pie = ['#2ecc71', '#e74c3c']
+        explode = (0.05, 0.05)  # Slightly separate slices
+        
+        wedges, texts, autotexts = ax.pie(sizes, labels=labels, colors=colors_pie, 
+                                           autopct='%1.1f%%', startangle=90, 
+                                           explode=explode,
+                                           textprops={'fontsize': 12, 'fontweight': 'bold'},
+                                           shadow=True)
+        
+        # Make percentage text white for better visibility
+        for autotext in autotexts:
+            autotext.set_color('white')
+            autotext.set_fontsize(14)
+        
+        ax.set_title('Final Population State', fontsize=14, fontweight='bold', pad=20)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.export_dir, 'final_state_pie.png'), dpi=300)
+        print("Saved: final_state_pie.png")
+        plt.close()
+    
+    def plot_statistics_summary(self):
+        """Plot statistics summary as text."""
+        if self.states_df is None:
+            print("No states data to plot")
+            return
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.axis('off')
+        
+        final_state = self.states_df.iloc[-1]
+        max_infected = self.states_df['infected'].max()
+        attack_rate = (final_state['infected'] / final_state['total_people'] * 100) if final_state['total_people'] > 0 else 0
+        
+        stats_text = f"""
+        ═══════════════════════════════════════════════
+                   SIMULATION STATISTICS
+        ═══════════════════════════════════════════════
+        
+        ⏱️  TEMPORAL DATA
+           Duration:           {self.states_df['time'].max():.1f} seconds
+           Simulation Start:   {self.states_df['time'].min():.1f} s
+           Simulation End:     {self.states_df['time'].max():.1f} s
+        
+        👥  POPULATION DATA
+           Max Population:     {int(self.states_df['total_people'].max())} people
+           Final Population:   {int(final_state['total_people'])} people
+           Average Population: {int(self.states_df['total_people'].mean())} people
+        
+        🦠  INFECTION DATA
+           Max Infections:     {int(max_infected)} people
+           Final Infections:   {int(final_state['infected'])} people
+           Final Healthy:      {int(final_state['total_people'] - final_state['infected'])} people
+        
+        📊  KEY METRICS
+           Attack Rate:        {attack_rate:.1f}%
+           Peak Infection:     {(max_infected / self.states_df['total_people'].max() * 100):.1f}%
+        
+        ═══════════════════════════════════════════════
+        """
+        
+        ax.text(0.5, 0.5, stats_text, fontsize=11, family='monospace',
+               verticalalignment='center', horizontalalignment='center',
+               bbox=dict(boxstyle='round,pad=1', facecolor='#ecf0f1', 
+                        edgecolor='#34495e', linewidth=2, alpha=0.9))
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.export_dir, 'statistics_summary.png'), dpi=300)
+        print("Saved: statistics_summary.png")
         plt.close()
 
     def generate_all_plots(self):
@@ -382,17 +562,32 @@ class SimulationVisualizer:
         self.plot_epidemiological_curve()
         self.plot_most_contagious()
         self.plot_most_contagious_rooms()
-        self.plot_population_stats()
+        self.plot_total_population()
+        self.plot_infection_percentage()
+        self.plot_final_state_pie()
+        self.plot_statistics_summary()
+        self.plot_school_heatmap()
         
         print("-" * 50)
         print(f"\nAll plots saved to: {self.export_dir}")
 
 
 def main():
-    export_dir = os.path.join(os.getcwd(), "DEMO", "exports")
+    # Try both possible export directories
+    export_dirs = [
+        os.path.join(os.getcwd(), "Versión final", "exports"),
+        os.path.join(os.getcwd(), "DEMO", "exports")
+    ]
     
-    if not os.path.exists(export_dir):
-        print(f"Error: {export_dir} not found")
+    export_dir = None
+    for d in export_dirs:
+        if os.path.exists(d):
+            export_dir = d
+            break
+    
+    if export_dir is None:
+        print(f"Error: No exports directory found")
+        print("Tried: " + ", ".join(export_dirs))
         print("Run simulation_with_logger.py first to generate CSV files")
         return
     

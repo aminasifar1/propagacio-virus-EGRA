@@ -5,9 +5,9 @@ This script wraps the existing DEMO components to track and export
 contacts and infections without modifying the original files.
 
 Usage:
-    python DEMO\simulation_with_logger.py
+    python "Versión final/simulation_with_logger.py"
 
-Outputs CSV to: DEMO/exports/
+Outputs CSV to: Versión final/exports/
 """
 import os
 import json
@@ -27,13 +27,15 @@ from person import Person
 from marker import Marker
 from virus import Virus
 from infectionbar import InfectionBar
+from simclock import SimClock
+from DEMO import load_obj  # Import load_obj from DEMO.py
 
 
 class SimulationLogger:
     """Tracks contacts and infections during simulation and exports to CSV."""
 
     def __init__(self, out_dir: str = None):
-        self.out_dir = out_dir or os.path.join(os.getcwd(), "DEMO", "exports")
+        self.out_dir = out_dir or os.path.join(os.getcwd(), "Versión final", "exports")
         os.makedirs(self.out_dir, exist_ok=True)
         self.start_time = time.time()
         self.contacts = []
@@ -67,16 +69,23 @@ class SimulationLogger:
         except Exception:
             pass
 
-    def log_infection(self, source, target, method="direct"):
+    def log_infection(self, source, target, method="direct", room=None):
         """Log an infection event."""
         try:
             src_id = self.get_person_id(source) if source else None
             tgt_id = self.get_person_id(target)
+            # Get room from target person if not provided
+            if room is None:
+                if hasattr(target, 'sala'):
+                    room = target.sala
+                elif hasattr(target, 'location'):
+                    room = target.location
             self.infections.append({
                 "time": self._now(),
                 "source": src_id,
                 "target": tgt_id,
                 "method": method,
+                "room": room or "unknown",
             })
         except Exception:
             pass
@@ -102,7 +111,7 @@ class SimulationLogger:
         if self.infections:
             path = os.path.join(self.out_dir, "infections.csv")
             with open(path, "w", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=["time", "source", "target", "method"])
+                writer = csv.DictWriter(f, fieldnames=["time", "source", "target", "method", "room"])
                 writer.writeheader()
                 writer.writerows(self.infections)
             print(f"Wrote {len(self.infections)} infections to {path}")
@@ -131,8 +140,10 @@ class LoggingVirusWrapper:
 
     def infectar(self, person):
         """Intercept infectar to log infection."""
+        # Get room from person
+        room = getattr(person, 'sala', 'unknown')
         # Log the infection (source unknown without more context, use None)
-        self.logger.log_infection(source=None, target=person, method="infectar")
+        self.logger.log_infection(source=None, target=person, method="infectar", room=room)
         # Call original
         self.virus.infectar(person)
 
@@ -160,88 +171,32 @@ class LoggingVirusWrapper:
                 # Check if infection happens
                 if dist < infected.ring.contagion_radius:
                     if random.random() < self.virus.infection_probability:
-                        self.logger.log_infection(source=infected, target=uninfected, method="direct_radius")
+                        # Get room from infected or uninfected person
+                        room = getattr(infected, 'sala', None) or getattr(uninfected, 'sala', 'unknown')
+                        self.logger.log_infection(source=infected, target=uninfected, method="direct_radius", room=room)
 
         # Call original check_infections
         self.virus.check_infections(mundo)
         self._inside_check_infections = False
 
 
-def load_obj(path: str):
-    """Load OBJ file (copied from DEMO.py) ."""
-    vertices = []
-    faces = []
-    edges = set()
-
-    try:
-        with open(path, 'r') as f:
-            for line in f:
-                if line.startswith('v '):
-                    _, x, y, z = line.strip().split()
-                    vertices.append((float(x), float(y), float(z)))
-                elif line.startswith('f '):
-                    parts = line.strip().split()[1:]
-                    face_indices = [int(p.split('/')[0]) - 1 for p in parts]
-                    for i in range(1, len(face_indices) - 1):
-                        faces.append((face_indices[0], face_indices[i], face_indices[i + 1]))
-                    for i in range(len(face_indices)):
-                        p1 = face_indices[i]
-                        p2 = face_indices[(i + 1) % len(face_indices)]
-                        edges.add(tuple(sorted((p1, p2))))
-    except FileNotFoundError:
-        print(f"Error: El fitxer '{path}' no s'ha trobat.")
-        raise
-
-    if not vertices:
-        return np.array([]), np.array([]), np.array([]), (glm.vec3(0), glm.vec3(0))
-
-    np_vertices = np.array(vertices, dtype='f4')
-    min_coords = np.min(np_vertices, axis=0)
-    max_coords = np.max(np_vertices, axis=0)
-    bounding_box = (glm.vec3(min_coords), glm.vec3(max_coords))
-
-    vertex_normals = [np.zeros(3) for _ in range(len(vertices))]
-    for face in faces:
-        v0, v1, v2 = (np.array(vertices[i]) for i in face)
-        face_normal = np.cross(v1 - v0, v2 - v0)
-        for vertex_index in face:
-            vertex_normals[vertex_index] += face_normal
-    vertex_normals = [v / np.linalg.norm(v) if np.linalg.norm(v) > 0 else np.array([0, 1, 0]) for v in vertex_normals]
-
-    tri_vertices_data = []
-    normals_data = []
-    for face in faces:
-        for vertex_index in face:
-            tri_vertices_data.extend(vertices[vertex_index])
-            normals_data.extend(vertex_normals[vertex_index])
-
-    line_vertices_data = []
-    for edge in edges:
-        line_vertices_data.extend(vertices[edge[0]])
-        line_vertices_data.extend(vertices[edge[1]])
-
-    return (
-        np.array(tri_vertices_data, dtype='f4'),
-        np.array(normals_data, dtype='f4'),
-        np.array(line_vertices_data, dtype='f4'),
-        bounding_box
-    )
-
-
 class MotorGraficoWithLogger:
     """Modified MotorGrafico that uses LoggingVirusWrapper."""
 
-    def __init__(self, scene_path, person_path, facultad, win_size=(640, 360), logger=None):
+    def __init__(self, scene_path, person_path, facultad, horaris_path=None, win_size=(1820, 980), logger=None):
         pg.init()
-        pg.display.set_caption("3D Viewer + Logger - WASD moverte, TAB soltar ratón")
+        pg.display.set_caption("Epidemiological Simulator + Logger - WASD moverte, TAB soltar ratón")
         self.WIN_SIZE = win_size
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_DEPTH_SIZE, 24)
+        pg.display.gl_set_attribute(pg.GL_STENCIL_SIZE, 8)
         self.screen = pg.display.set_mode(self.WIN_SIZE, pg.OPENGL | pg.DOUBLEBUF)
         self.ctx = mgl.create_context()
         self.ctx.enable(mgl.DEPTH_TEST)
         self.ctx.front_face = 'ccw'
         self.aspect_ratio = win_size[0] / win_size[1]
+        self.speed = 1
 
         self.camera = Camera(self)
         self.mundo = facultad
@@ -259,24 +214,54 @@ class MotorGraficoWithLogger:
         self.logger = logger
         virus = Virus(self, 0.2, 0.0, 0.2, 1, 0.9)
         self.virus = LoggingVirusWrapper(virus, logger) if logger else virus
+        
+        # Infection bar
+        self.infection_bar = InfectionBar(self.WIN_SIZE[0], self.WIN_SIZE[1])
 
-        tri_data, normals, line_data, bounding_box = load_obj(scene_path)
-        self.object = Escenario(self.ctx, self.camera, tri_data, normals, line_data, bounding_box)
+        # SimClock and Scheduler
+        self.day_sim_seconds = 20 * 60  # 20 minutos para un día lectivo
+        self.sim_clock = SimClock(day_sim_seconds=self.day_sim_seconds, speed_mult=self.speed)
+        self.sim_time_in_day = 0.0
+        self.current_day = 0  # 0=monday, 1=tuesday, etc.
+        
+        # Load schedule from CSV
+        self.schedule_events = []
+        if horaris_path and os.path.exists(horaris_path):
+            with open(horaris_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    self.schedule_events.append(row)
+            print(f"[SCHEDULER] Loaded {len(self.schedule_events)} schedule entries")
+        
+        self.spawned_events = set()  # Track which events have been spawned
+
+        # Load scene
+        scene_data, bounding_box, texture_file = load_obj(scene_path)
+        self.object = Escenario(self.ctx, self.camera, scene_data, bounding_box, texture_file)
         self.object.app = self
 
-        self.p_tri_data, self.p_normals, self.p_line_data, bounding_box = load_obj(person_path)
+        # Load person model
+        p_data, p_bbox, p_texture = load_obj(person_path)
+        self.p_data = p_data
+        self.p_texture = p_texture
         self.people = []
         self.simulando = False
-        self.tiempo_persona = 0.0
-        self.intervalo_spawn = 4.0
-        self.max_people = 100  # Máximo de personas en la simulación
 
-        first_person = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, facultad, ['aula1'], 'pasillo')
-        self.person_vao_tri = self.ctx.vertex_array(self.object.shader, [(first_person.tri_vbo, '3f', 'in_position'), (first_person.nrm_vbo, '3f', 'in_normal')])
-        self.person_vao_line = self.ctx.vertex_array(self.object.shader, [(first_person.line_vbo, '3f', 'in_position')])
+        # Create person VBO and shader
+        from person import Person
+        temp_person = Person(self, self.ctx, self.camera, self.p_data, facultad, ['Q1-0013'], 'pasillo')
+        self.person_shader = temp_person.get_shader(self.ctx)
+        
+        # Create shared VBO and VAO
+        self.person_vbo = self.ctx.buffer(self.p_data)
+        self.person_vao_tri = self.ctx.vertex_array(
+            self.person_shader, 
+            [(self.person_vbo, '3f 12x 2f 3f 3f', 'in_position', 'in_texcoord', 'in_color', 'in_smooth_normal')]
+        )
+        self.person_vao_line = None
 
     def create_person(self, schedule=[], spawn='pasillo'):
-        persona = Person(self.ctx, self.camera, self.p_tri_data, self.p_normals, self.p_line_data, self.mundo, schedule, spawn)
+        persona = Person(self, self.ctx, self.camera, self.p_data, self.mundo, schedule, spawn)
         self.people.append(persona)
         return persona
 
@@ -325,13 +310,10 @@ class MotorGraficoWithLogger:
             print("[MOTOR] Motor no inicializado.")
             return
 
-        rooms = list(self.mundo.keys())
-        if 'pasillo' in rooms:
-            rooms.remove('pasillo')
-        clean_rooms = {room: 0 for room in rooms}
-
         print("[MOTOR] Iniciando ciclo principal...")
         last_frame_time = time.time()
+        grupo_personas = {}  # group_id -> list of Person
+        dt_sim = 0.0  # delta time for simulation
 
         def aabb_collision(pos1, bb1_half, pos2, bb2_half):
             return (abs(pos1.x - pos2.x) <= (bb1_half.x + bb2_half.x) and
@@ -361,26 +343,76 @@ class MotorGraficoWithLogger:
                             print(f"Mostrar bounding boxes: {self.show_bboxes}")
                         elif e.key == pg.K_r:
                             self.people.clear()
-                            self.tiempo_persona = 0.0
+                            grupo_personas.clear()
+                            self.sim_time_in_day = 0.0
+                            self.current_day = 0
+                            self.sim_clock.world_time = 0.0
+                            self.spawned_events.clear()
                             print("🔄 Simulación reiniciada")
+                        elif e.key == pg.K_1:
+                            self.speed = 1
+                        elif e.key == pg.K_2:
+                            self.speed = 3
+                        elif e.key == pg.K_3:
+                            self.speed = 10
 
                 self.camera.move(self.delta_time)
                 self.camera.update_matrices()
                 self.ctx.clear(0.07, 0.07, 0.09)
 
                 if self.simulando:
-                    self.tiempo_persona += dt
-                    if self.tiempo_persona >= self.intervalo_spawn and len(self.people) < self.max_people:
-                        selection = random.choice(rooms)
-                        p = self.create_person([selection])
-                        # Infect first person in each room to seed the virus
-                        if clean_rooms[selection] == 0:
-                            self.virus.virus.infectar(p)
-                            print(f"🦠 Initial infection in room: {selection}")
-                        clean_rooms[selection] += 1
-                        self.tiempo_persona = 0.0
+                    scaled_dt = dt * self.speed
+                    dt_sim = self.sim_clock.step(scaled_dt)
+                    self.sim_time_in_day += dt_sim
+                    
+                    # Calculate current slot (30 min intervals, starting at 8:00)
+                    slot_now = int(self.sim_clock.minute_of_day() // 30)
+                    
+                    # Map slot to day_name for scheduler
+                    day_names = ['mon', 'tue', 'wed', 'thu', 'fri']
+                    day_name = day_names[self.current_day % 5]
 
-                    self.virus.virus.tick_timer += self.delta_time
+                    # Check schedule for spawns
+                    if self.schedule_events:
+                        # Convert slot to hour:minute
+                        total_minutes = self.sim_clock.minute_of_day()
+                        hour = 8 + (total_minutes // 60)
+                        minute = total_minutes % 60
+                        
+                        for event in self.schedule_events:
+                            # Parse event time (format: "HH:MM")
+                            event_start = event['start']
+                            event_hour, event_minute = map(int, event_start.split(':'))
+                            
+                            # Check if this event matches current day and time (with 1-minute tolerance)
+                            event_key = f"{event['group']}_{event['day']}_{event_start}"
+                            if (event['day'] == day_name and 
+                                event_hour == hour and 
+                                abs(event_minute - minute) <= 1 and
+                                event_key not in self.spawned_events):
+                                
+                                group_id = event['group']
+                                room = event['room']
+                                
+                                if group_id not in grupo_personas:
+                                    grupo_personas[group_id] = []
+                                
+                                # Spawn 10-20 people for this group
+                                num_people = random.randint(10, 20)
+                                for _ in range(num_people):
+                                    persona = self.create_person([room], spawn='pasillo')
+                                    grupo_personas[group_id].append(persona)
+                                    
+                                # Infect 1 random person in the group
+                                if grupo_personas[group_id]:
+                                    patient_zero = random.choice(grupo_personas[group_id])
+                                    self.virus.virus.infectar(patient_zero)
+                                    print(f"🦠 Initial infection in group {group_id} at {hour:02d}:{minute:02d}")
+                                
+                                self.spawned_events.add(event_key)
+
+                    # Virus tick
+                    self.virus.virus.tick_timer += dt_sim
                     if self.virus.virus.tick_timer >= self.virus.virus.tick_duration:
                         self.virus.virus.tick_timer -= self.virus.virus.tick_duration
                         self.virus.check_infections(self.mundo)
@@ -399,7 +431,7 @@ class MotorGraficoWithLogger:
                 for p in self.people:
                     if self.simulando:
                         old_pos = glm.vec3(p.position)
-                        p.update(self.delta_time)
+                        p.update(dt_sim)
                         for other in self.people:
                             if other is p:
                                 continue
@@ -407,9 +439,29 @@ class MotorGraficoWithLogger:
                                 p.position = old_pos
                                 p.m_model = glm.translate(glm.mat4(1.0), old_pos)
                                 break
-                    p.render(self.object.shader, self.person_vao_tri, self.person_vao_line, light_pos)
+                    p.render(self.person_shader, self.person_vao_tri, self.person_vao_line, light_pos)
 
+                # Render UI
                 self.ui_surface.fill((0, 0, 0, 0))
+                
+                # Infection bar
+                num_infected = sum(1 for p in self.people if hasattr(p, 'ring') and p.ring is not None)
+                total_people = len(self.people)
+                self.infection_bar.render(self.ui_surface, num_infected, total_people)
+                
+                # Clock and speed text
+                font = pg.font.Font(None, 24)
+                day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                total_minutes = self.sim_clock.minute_of_day()
+                hour = 8 + (total_minutes // 60)
+                minute = total_minutes % 60
+                clock_text = f"{day_names[self.current_day % 5]} {hour:02d}:{minute:02d}"
+                speed_text = f"Speed: x{self.speed}"
+                text_surf = font.render(clock_text, True, (255, 255, 255))
+                speed_surf = font.render(speed_text, True, (255, 255, 255))
+                self.ui_surface.blit(text_surf, (10, 10))
+                self.ui_surface.blit(speed_surf, (10, 40))
+                
                 self._render_ui_overlay()
 
                 self.frame_count += 1
@@ -417,7 +469,7 @@ class MotorGraficoWithLogger:
                     self.fps = self.frame_count / (time.time() - self.last_time)
                     self.frame_count = 0
                     self.last_time = time.time()
-                    pg.display.set_caption(f"3D Viewer - FPS: {self.fps:.1f} - Logger active")
+                    pg.display.set_caption(f"Epidemiological Simulator - FPS: {self.fps:.1f} - Logger active")
 
                 pg.display.flip()
 
@@ -428,9 +480,12 @@ class MotorGraficoWithLogger:
 
 def main():
     ROOT_PATH = os.getcwd()
-    DATA_PATH = os.path.join(ROOT_PATH, "DEMO", "data", "salas")
-    SCENE_PATH = os.path.join(ROOT_PATH, "DEMO", "Models", "OBJ.obj")
-    PERSON_PATH = os.path.join(ROOT_PATH, "DEMO", "Models", "person.obj")
+    DATA_PATH = os.path.join(ROOT_PATH, "Versión final", "data", "salas")
+    SCENE_PATH = os.path.join(ROOT_PATH, "Versión final", "Models", "DEF.obj")
+    PERSON_PATH = os.path.join(ROOT_PATH, "Versión final", "Models", "person.obj")
+    HORARIS_PATH = os.path.join(ROOT_PATH, "Versión final", "Horarios.csv")
+    
+    print(f"[MAIN] Ruta base: {ROOT_PATH}")
 
     facultad = {}
     for archivo in os.listdir(DATA_PATH):
@@ -448,10 +503,13 @@ def main():
         else:
             sala = Sala.from_json_struct(data)
         facultad[nombre] = sala
+        print(f"[MAIN] Cargada sala '{nombre}' ({tipo}) con {len(sala.waypoints)} waypoints.")
 
+    print(f"[MAIN] Total salas: {len(facultad)}\n")
     print("Starting simulation with logging...")
+    
     logger = SimulationLogger()
-    motor = MotorGraficoWithLogger(SCENE_PATH, PERSON_PATH, facultad, logger=logger)
+    motor = MotorGraficoWithLogger(SCENE_PATH, PERSON_PATH, facultad, HORARIS_PATH, logger=logger)
     motor.start()
     motor.run()
 
