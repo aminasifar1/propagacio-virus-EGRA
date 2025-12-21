@@ -710,7 +710,7 @@ class MotorGrafico:
         min_coords, max_coords = self.object.bounding_box
         print(f"Escenari carregat. Bounding Box: MIN {min_coords}, MAX {max_coords}")
 
-        self.graph = build_graph_drawables(self.ctx, nodes, edges)
+        # self.graph = build_graph_drawables(self.ctx, nodes, edges)
 
     # Crear persona
     def create_person(self, schedule=[], spawn='pasillo', grupo=None):
